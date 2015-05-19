@@ -33,14 +33,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -63,7 +60,6 @@ import com.bigdata.journal.Journal;
 import com.bigdata.rdf.ServiceProviderHook;
 import com.bigdata.rdf.sail.BigdataSail;
 import com.bigdata.rdf.sail.CreateKBTask;
-import com.bigdata.rdf.sparql.ast.service.ServiceRegistry;
 import com.bigdata.rdf.task.AbstractApiTask;
 import com.bigdata.service.AbstractDistributedFederation;
 import com.bigdata.service.DefaultClientDelegate;
@@ -75,7 +71,7 @@ import com.bigdata.util.httpd.AbstractHTTPD;
 /**
  * Listener provides life cycle management of the {@link IIndexManager} by
  * interpreting the configuration parameters in the {@link ServletContext}.
- *
+ * 
  * @author <a href="mailto:thompsonbry@users.sourceforge.net">Bryan Thompson</a>
  */
 public class BigdataRDFServletContextListener implements
@@ -91,7 +87,7 @@ public class BigdataRDFServletContextListener implements
     private long readLockTx;
     private BigdataRDFContext rdfContext;
 //    private SparqlCache sparqlCache;
-
+    
     /**
      * The set of init parameters from the <code>web.xml</code> file after we
      * have applied any overrides specified by the
@@ -120,10 +116,10 @@ public class BigdataRDFServletContextListener implements
      * Return the effective value of the given init parameter, respecting any
      * overrides that were specified to the {@link NanoSparqlServer} when it
      * initialized the server.
-     *
+     * 
      * @param key
      *            The name of the desired init parameter.
-     *
+     * 
      * @return The effective value of that init parameter.
      */
     protected String getInitParameter(final String key) {
@@ -135,13 +131,13 @@ public class BigdataRDFServletContextListener implements
     public BigdataRDFServletContextListener() {
         super();
     }
-
+    
     protected BigdataRDFContext getBigdataRDFContext() {
 
         return rdfContext;
-
+        
     }
-
+    
     @Override
     public void contextInitialized(final ServletContextEvent e) {
 
@@ -149,7 +145,7 @@ public class BigdataRDFServletContextListener implements
             log.info("");
 
         Banner.banner();
-
+        
         final ServletContext context = e.getServletContext();
 
         /*
@@ -157,10 +153,10 @@ public class BigdataRDFServletContextListener implements
          * for this initialization procedure.
          */
         {
-
+        
             effectiveInitParams = new LinkedHashMap<String, String>();
 
-            /*
+            /*  
              * Copy the init params from web.xml into a local map.
              */
             final Enumeration<String> names = context.getInitParameterNames();
@@ -183,25 +179,25 @@ public class BigdataRDFServletContextListener implements
                         .getAttribute(BigdataRDFServletContextListener.INIT_PARAM_OVERRIDES);
 
                 if (initParamOverrides != null) {
-
+                
                     effectiveInitParams.putAll(initParamOverrides);
-
+                    
                 }
 
             }
-
+            
         }
 
         final String namespace;
         {
-
+         
             String s = getInitParameter(ConfigParams.NAMESPACE);
 
             if (s == null)
                 s = ConfigParams.DEFAULT_NAMESPACE;
 
             namespace = s;
-
+            
             if (log.isInfoEnabled())
                 log.info(ConfigParams.NAMESPACE + "=" + namespace);
 
@@ -228,25 +224,25 @@ public class BigdataRDFServletContextListener implements
             /*
              * The index manager object was directly set by the caller.
              */
-
+            
             indexManager = (IIndexManager) context
                     .getAttribute(IIndexManager.class.getName());
 
             // the caller is responsible for the life cycle.
             closeIndexManager = false;
-
+            
         } else {
 
             /**
              * The index manager will be open based on the specified property
              * file or config file.
-             *
+             * 
              * Note: You may override the location of the property file using
              * <pre>
              * -Dcom.bigdata.rdf.sail.webapp.ConfigParams.propertyFile=FILE
              * </pre>
              */
-
+            
             // The fully qualified name of the environment variable.
             final String FQN_PROPERTY_FILE = ConfigParams.class.getName() + "."
                     + ConfigParams.PROPERTY_FILE;
@@ -269,7 +265,7 @@ public class BigdataRDFServletContextListener implements
                 log.info(ConfigParams.PROPERTY_FILE + "=" + propertyFile);
 
             indexManager = openIndexManager(propertyFile);
-
+            
             // we are responsible for the life cycle.
             closeIndexManager = true;
 
@@ -305,11 +301,11 @@ public class BigdataRDFServletContextListener implements
 
         final long timestamp;
         {
-
+        
             final String s = getInitParameter( ConfigParams.READ_LOCK);
-
+            
             readLock = s == null ? null : Long.valueOf(s);
-
+            
             if (readLock != null) {
 
                 /*
@@ -375,7 +371,7 @@ public class BigdataRDFServletContextListener implements
 
             describeEachNamedGraph = s == null ? ConfigParams.DEFAULT_DESCRIBE_EACH_NAMED_GRAPH
                     : Boolean.valueOf(s);
-
+            
             if (log.isInfoEnabled())
                 log.info(ConfigParams.DESCRIBE_EACH_NAMED_GRAPH + "="
                         + describeEachNamedGraph);
@@ -434,7 +430,7 @@ public class BigdataRDFServletContextListener implements
 //                new SparqlCache(new MemoryManager(DirectBufferPool.INSTANCE)));
 
         {
-
+        
             final boolean forceOverflow = Boolean
                     .valueOf(getInitParameter(ConfigParams.FORCE_OVERFLOW));
 
@@ -453,23 +449,14 @@ public class BigdataRDFServletContextListener implements
 
         }
 
-        {
-            final String serviceWhitelist = getInitParameter(ConfigParams.SERVICE_WHITELIST);
-            if (serviceWhitelist != null) {
-                log.info("Service whitelist: " + serviceWhitelist);
-                Set<String> wl = new HashSet<String>(Arrays.asList(serviceWhitelist.split("\\s*,\\s*")));
-                ServiceRegistry.getInstance().setServiceWhitelist(wl);
-            }
-        }
-
         /*
          * Force service/format registration.
-         *
+         * 
          * @see <a href="https://sourceforge.net/apps/trac/bigdata/ticket/439">
          * Class loader problems </a>
          */
         ServiceProviderHook.forceLoad();
-
+        
         if (log.isInfoEnabled())
             log.info("done");
 
@@ -486,23 +473,23 @@ public class BigdataRDFServletContextListener implements
             rdfContext.shutdownNow();
 
             rdfContext = null;
-
+            
         }
 
         if (txs != null && readLock != null && readLock != -1L) {
 
             try {
-
+            
                 txs.abort(readLockTx);
-
+                
             } catch (IOException ex) {
-
+                
                 log
                         .error("Could not release transaction: tx="
                                 + readLockTx, ex);
-
+            
             }
-
+            
             txs = null;
             readLock = null;
 
@@ -512,18 +499,18 @@ public class BigdataRDFServletContextListener implements
 
             if (closeIndexManager)
                 jnl.close();
-
+            
             jnl = null;
-
+            
         }
-
+        
         if (jiniClient != null) {
-
+        
             if (closeIndexManager)
                 jiniClient.disconnect(true/* immediateShutdown */);
-
+            
             jiniClient = null;
-
+            
         }
 
 //        // Clear the SPARQL cache.
@@ -536,7 +523,7 @@ public class BigdataRDFServletContextListener implements
 //        }
 
         effectiveInitParams = null;
-
+        
         /*
          * Terminate various threads which should no longer be executing once we
          * have destroyed the servlet context. If you do not do this then
@@ -544,21 +531,21 @@ public class BigdataRDFServletContextListener implements
          * some threads.
          */
         {
-
+            
             SynchronizedHardReferenceQueueWithTimeout.stopStaleReferenceCleaner();
-
+            
         }
-
+        
     }
 
     /**
      * Open the {@link IIndexManager} identified by the property file.
-     *
+     * 
      * @param propertyFile
      *            The property file (for a standalone bigdata instance) or the
      *            jini configuration file (for a bigdata federation). The file
      *            must end with either ".properties" or ".config".
-     *
+     *            
      * @return The {@link IIndexManager}.
      */
     private IIndexManager openIndexManager(final String propertyFile) {
@@ -579,7 +566,7 @@ public class BigdataRDFServletContextListener implements
             // Check the classpath.
             propertyFileUrl = BigdataRDFServletContextListener.class
                     .getClassLoader().getResource(propertyFile);
-
+    
         }
 
         if (log.isInfoEnabled())
@@ -593,7 +580,7 @@ public class BigdataRDFServletContextListener implements
                     + System.getProperty("user.dir"));
 
         }
-
+        
         boolean isJini = false;
         if (propertyFile.endsWith(".config")) {
             // scale-out.
@@ -619,11 +606,11 @@ public class BigdataRDFServletContextListener implements
 
                 /*
                  * A bigdata federation.
-                 *
+                 * 
                  * Note: The Apache River configuration mechanism will search
                  * both the file system and the classpath, much as we have done
                  * above.
-                 *
+                 * 
                  * TODO This will use the ClassLoader associated with the
                  * JiniClient if that is different from the ClassLoader used
                  * above, then it could be possible for one ClassLoader to find
@@ -672,7 +659,7 @@ public class BigdataRDFServletContextListener implements
         }
 
         return indexManager;
-
+        
     }
 
     /**
@@ -685,23 +672,23 @@ public class BigdataRDFServletContextListener implements
 
         final private IBigdataClient<?> client;
         final private BigdataRDFServletContextListener servletContextListener;
-
+        
         /**
          * The path component under which the query engine performance counters
          * will be reported.
          */
         static private final String QUERY_ENGINE = "Query Engine";
-
+        
         public NanoSparqlServerFederationDelegate(final IBigdataClient<?> client,
                 final BigdataRDFServletContextListener servletContextListener) {
 
             super(client, null/* clientOrService */);
 
             this.client = client;
-
+            
             if (servletContextListener == null)
                 throw new IllegalArgumentException();
-
+            
             this.servletContextListener = servletContextListener;
 
         }
@@ -715,21 +702,21 @@ public class BigdataRDFServletContextListener implements
         public void reattachDynamicCounters() {
 
 //        	final BigdataRDFContext rdfContext = servletContextListener.rdfContext;
+        	
+			final IBigdataFederation<?> fed;
 
-            final IBigdataFederation<?> fed;
+			try {
+			
+				fed = client.getFederation();
+				
+				assert fed != null;
 
-            try {
-
-                fed = client.getFederation();
-
-                assert fed != null;
-
-            } catch (IllegalStateException ex) {
-
-                log.warn("Closed: " + ex);
-
-                return;
-            }
+			} catch (IllegalStateException ex) {
+				
+				log.warn("Closed: " + ex);
+				
+				return;
+			}
 
             // The service's counter set hierarchy.
             final CounterSet serviceRoot = fed
@@ -740,7 +727,7 @@ public class BigdataRDFServletContextListener implements
              */
             {
 
-                // Ensure path exists.
+            	// Ensure path exists.
                 final CounterSet tmp = serviceRoot
                         .makePath(IProcessCounters.Memory);
 
@@ -762,15 +749,15 @@ public class BigdataRDFServletContextListener implements
              */
             {
 
-                /*
-                 * TODO It would be better to have this on the BigdataRDFContext
-                 * so we are not creating it lazily here if the NSS has not yet
-                 * been issued a query.
-                 */
-                final QueryEngine queryEngine = QueryEngineFactory
-                        .getQueryController(fed);
+				/*
+				 * TODO It would be better to have this on the BigdataRDFContext
+				 * so we are not creating it lazily here if the NSS has not yet
+				 * been issued a query.
+				 */
+				final QueryEngine queryEngine = QueryEngineFactory
+						.getQueryController(fed);
 
-                final CounterSet tmp = serviceRoot;
+            	final CounterSet tmp = serviceRoot;
 
                 synchronized (tmp) {
 
@@ -799,7 +786,7 @@ public class BigdataRDFServletContextListener implements
                 final ICounterSetAccess access) throws IOException {
 
             return null;
-
+            
         }
 
     }

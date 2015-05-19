@@ -34,7 +34,7 @@ import com.bigdata.journal.IIndexManager;
  * Note: When used in a jini/River configuration, the name of the component for
  * those configuration options is the fully qualified class name for the
  * {@link NanoSparqlServer}.
- *
+ * 
  * @see <a href="https://sourceforge.net/apps/trac/bigdata/ticket/596"> Change
  *      web.xml parameter names to be consistent with Jini/River </a>
  */
@@ -55,7 +55,7 @@ public interface ConfigParams {
      * many triple or quad store instances within a bigdata instance.
      */
     String NAMESPACE = "namespace";
-
+    
     String DEFAULT_NAMESPACE = "kb";
 
     /**
@@ -63,22 +63,22 @@ public interface ConfigParams {
      * will be created if none exists.
      */
     String CREATE = "create";
-
+    
     boolean DEFAULT_CREATE = true;
-
+    
     /**
      * The size of the thread pool used to service SPARQL queries -OR- ZERO
      * (0) for an unbounded thread pool (default
      * {@value #DEFAULT_QUERY_THREAD_POOL_SIZE}).
      */
     String QUERY_THREAD_POOL_SIZE = "queryThreadPoolSize";
-
+    
     int DEFAULT_QUERY_THREAD_POOL_SIZE = 16;
-
+    
     /**
      * Force a compacting merge of all shards on all data services in a
      * bigdata federation (optional, default <code>false</code>).
-     *
+     * 
      * <strong>This option should only be used for benchmarking
      * purposes.</strong>
      */
@@ -93,7 +93,7 @@ public interface ConfigParams {
      * issued against a read-only transaction.
      */
     String READ_LOCK = "readLock";
-
+    
     /**
      * When <code>true</code> and the KB instance is in the <code>quads</code>
      * mode, each named graph will also be described in in the same level of
@@ -111,9 +111,9 @@ public interface ConfigParams {
      * expose the SPARQL end point to a limited audience.
      */
     String DESCRIBE_EACH_NAMED_GRAPH = "describeEachNamedGraph";
-
+    
     boolean DEFAULT_DESCRIBE_EACH_NAMED_GRAPH = false;
-
+    
     /**
      * When <code>true</code>, requests will be refused for mutation operations
      * on the database made through the REST API. This may be used to help lock
@@ -138,11 +138,11 @@ public interface ConfigParams {
      * methods.
      * <p>
      * Note:
-     *
+     * 
      * @see BigdataRDFServletContextListener#contextInitialized(ServletContextEvent)
      * @see BigdataRDFServletContextListener#contextDestroyed(ServletContextEvent)
      * @see #DEFAULT_SERVLET_CONTEXT_LISTENER_CLASS
-     *
+     * 
      * @see <a href="https://sourceforge.net/apps/trac/bigdata/ticket/667" >
      *      Provide NanoSparqlServer initialization hook </a>
      */
@@ -151,8 +151,4 @@ public interface ConfigParams {
     String DEFAULT_SERVLET_CONTEXT_LISTENER_CLASS = BigdataRDFServletContextListener.class
             .getName();
 
-    /**
-     * List of the services this instance is allowed to call out to.
-     */
-    String SERVICE_WHITELIST = "serviceWhitelist";
 }
