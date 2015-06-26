@@ -32,6 +32,7 @@ Licensed under the Aduna BSD-style license.
 
 package com.bigdata.rdf.internal.constraints;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -62,6 +63,11 @@ final public class MathBOp extends IVValueExpression
 	private static final long serialVersionUID = 9136864442064392445L;
 
 	private static final transient Logger log = Logger.getLogger(MathBOp.class);
+
+	/**
+	 * Default math handlers in absence of any context.
+	 */
+	private static final IMathOpHandler[] defaultHandlers = new IMathOpHandler[] { new MathUtility() };
 
     public interface Annotations extends IVValueExpression.Annotations {
 
@@ -149,6 +155,21 @@ final public class MathBOp extends IVValueExpression
 
     }
 
+    /**
+     * Retrieve the list of handlers from the binding set.
+     * If binding set has none, return minimal default.
+     * @param bs
+     * @return
+     */
+    protected Iterable<IMathOpHandler> getHandlers(final IBindingSet bs) {
+        try {
+            ILexiconConfiguration<?> lexicon = getLexiconConfiguration(bs);
+            return lexicon.getTypeHandlers();
+        } catch(ContextNotAvailableException|NullPointerException e) {
+            return Arrays.asList(defaultHandlers);
+        }
+    }
+
     final public IV get(final IBindingSet bs) {
 
         final IV iv1 = getAndCheckLiteral(0, bs);
@@ -161,9 +182,7 @@ final public class MathBOp extends IVValueExpression
 		final Literal lit1 = asLiteral(iv1);
 		final Literal lit2 = asLiteral(iv2);
 
-		ILexiconConfiguration<?> lexicon = getLexiconConfiguration(bs);
-
-		for (IMathOpHandler handler: lexicon.getTypeHandlers()) {
+		for (IMathOpHandler handler: getHandlers(bs)) {
 		    if (handler.canInvokeMathOp(lit1, lit2)) {
 		        final IV iv =
 		                handler.doMathOp(lit1, iv1, lit2, iv2, op(), vf());
