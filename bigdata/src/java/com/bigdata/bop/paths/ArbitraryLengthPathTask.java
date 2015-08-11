@@ -59,17 +59,17 @@ import cutthecrap.utils.striterators.ICloseableIterator;
 
 /**
  * Execute a subquery that represents an arbitrary length path between a single
- * input variable and a single output variable. Continue this in rounds, using 
+ * input variable and a single output variable. Continue this in rounds, using
  * the output of the previous round as the input of the next round. This has
  * the effect of producing the transitive closure of the subquery operation.
- * 
+ *
  * IMPORTANT: The input binding set is expected to be a distinct projection over
  * the variables that are bound through the operator; in the general case, this
  * requires a {@link JVMDistinctBindingSetsOp} over these variable(s) prior to
  * calling the operator. In particular, this operator does *not* join with
  * incoming bindings, but discards all variables that are not bound by the
  * associated ALP node.
- * 
+ *
  * <p>
  * The basic idea behind this operator is to run a series of rounds until the
  * solutions produced by each round reach a fixed point. Regardless of the the
@@ -90,14 +90,14 @@ import cutthecrap.utils.striterators.ICloseableIterator;
  * solutions from the hash index; and (c) hash joining the solutions from the
  * sub-section of the query plan back against the hash index to reunite the
  * solutions from the subquery with those in the parent context.
- * 
+ *
  * @author <a href="mailto:mpersonick@users.sourceforge.net">Mike Personick</a>
  * @author <a href="mailto:ms@metaphacts.com">Michael Schmidt</a>
- * 
+ *
  *         TODO There should be two version of this operator. One for the JVM
  *         heap and another for the native heap. This will help when large
  *         amounts of data are materialized by the internal collections.
- *         
+ *
  *         TODO think about whether the whole SolutionKey mechanism is required
  *         at all, now that we have a distinct projection at the end. It might
  *         well be enough to store the input for the previous rounds in a map.
@@ -111,7 +111,7 @@ import cutthecrap.utils.striterators.ICloseableIterator;
 public class ArbitraryLengthPathTask implements Callable<Void> {
 
     private static final Logger log = Logger.getLogger(ArbitraryLengthPathOp.class);
-    
+
     private final BOpContext<IBindingSet> context;
     private final PipelineOp subquery;
     private final Gearing forwardGearing, reverseGearing;
@@ -138,22 +138,22 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
         this.subquery = (PipelineOp) controllerOp
                 .getRequiredProperty(Annotations.SUBQUERY);
 
-        final IVariableOrConstant<?> leftTerm = (IVariableOrConstant<?>) 
+        final IVariableOrConstant<?> leftTerm = (IVariableOrConstant<?>)
                 controllerOp.getProperty(Annotations.LEFT_TERM);
 
-        final IVariable<?> leftVar = leftTerm.isVar() ? (IVariable<?>) 
+        final IVariable<?> leftVar = leftTerm.isVar() ? (IVariable<?>)
                 leftTerm : null;
 
-        final IConstant<?> leftConst = leftTerm.isConstant() ? (IConstant<?>) 
+        final IConstant<?> leftConst = leftTerm.isConstant() ? (IConstant<?>)
                 leftTerm : null;
 
-        final IVariableOrConstant<?> rightTerm = (IVariableOrConstant<?>) 
+        final IVariableOrConstant<?> rightTerm = (IVariableOrConstant<?>)
                 controllerOp.getProperty(Annotations.RIGHT_TERM);
 
-        final IVariable<?> rightVar = rightTerm.isVar() ? (IVariable<?>) 
+        final IVariable<?> rightVar = rightTerm.isVar() ? (IVariable<?>)
                 rightTerm : null;
 
-        final IConstant<?> rightConst = rightTerm.isConstant() ? (IConstant<?>) 
+        final IConstant<?> rightConst = rightTerm.isConstant() ? (IConstant<?>)
                 rightTerm : null;
 
         final IVariable<?> tVarLeft = (IVariable<?>) controllerOp
@@ -195,7 +195,7 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
             log.debug("predVar: " + edgeVar);
             log.debug("middleTerm: " + middleTerm);
         }
-        
+
         if (edgeVar != null && middleTerm == null) {
             throw new IllegalArgumentException("Must provide a middle term when edge var is present");
         }
@@ -231,59 +231,59 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
                 controllerOp.getProperty(Annotations.LOAD_FACTOR,
                         Annotations.DEFAULT_LOAD_FACTOR),//
                 ConcurrentHashMapAnnotations.DEFAULT_CONCURRENCY_LEVEL);
-        
+
     }
-  
+
     @Override
     public Void call() throws Exception {
-        
+
         try {
 
             final ICloseableIterator<IBindingSet[]> sitr = context
                     .getSource();
-            
+
             if (!sitr.hasNext()) {
-                
+
                 processChunk(new IBindingSet[0]);
-                
+
             } else {
 
                 while (sitr.hasNext()) {
-                    
+
                   final IBindingSet[] chunk = sitr.next();
                     processChunk(chunk);
-                    
+
                 }
-                
+
             }
-            
+
             // Now that we know the subqueries ran Ok, flush the sink.
             if (!out.isEmpty()) {
-               out.flush();                   
+               out.flush();
             }
             context.getSink().flush();
-            
+
             // Done.
             return null;
 
         } finally {
-            
+
             context.getSource().close();
 
             context.getSink().close();
-            
+
             if (context.getSink2() != null)
                 context.getSink2().close();
 
         }
-        
+
     }
-    
+
     private void processChunk(final IBindingSet[] chunkIn) throws Exception {
 
-        final Map<SolutionKey, IBindingSet> solutions = 
+        final Map<SolutionKey, IBindingSet> solutions =
                 new LinkedHashMap<SolutionKey, IBindingSet>();
-        
+
         final QueryEngine queryEngine = this.context.getRunningQuery()
                 .getQueryEngine();
 
@@ -295,7 +295,7 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
         /*
          * Decide based on the schematics of the path and the incoming data
          * whether to run in forward or reverse gear.
-         * 
+         *
          * TODO Break the incoming chunk into two chunks - one to be run in
          * forward gear and one to be run in reverse. This is an extremely
          * unlikely scenario.
@@ -336,13 +336,13 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
                  * from that (over-filtering). See the todo below. Again,
                  * this seems to be a very esoteric problem stemming from an
                  * unlikely scenario. Not going to fix it for now.
-                 * 
+                 *
                  * TODO Add a binding for the bop id for the subquery that
                  * generated this solution and use that as part of the
                  * solution key somehow? This would allow duplicates from
                  * nested paths to remain in the outbound solutions, which
                  * seems to be the problem with the TCK query:
-                 * 
+                 *
                  * :a (:p*)* ?y
                  */
                 if (lowerBound == 0
@@ -385,7 +385,7 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
      * Detected bindings are flushed immediately and stored in the solutions
      * map, in order to avoid duplicate work (and break cycles in the
      * graph).
-     * 
+     *
      * @param solutions
      *            map to store solutions
      * @param queryEngine
@@ -400,22 +400,22 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
             final Set<IBindingSet> nextRoundInput, final Gearing gearing) {
 
         /*
-         * If we are collecting edge vars and we have an upper bound, we need 
-         * to do one extra iteration, a bonus round, to collect edges between 
+         * If we are collecting edge vars and we have an upper bound, we need
+         * to do one extra iteration, a bonus round, to collect edges between
          * nodes at the max distance away.
          */
-        final boolean bonusRound = 
+        final boolean bonusRound =
                 upperBound < Long.MAX_VALUE && edgeVar != null;
-        
+
         final long n = upperBound + (bonusRound ? 1 : 0);
-        
+
         /*
          * This set collects visited nodes.  It will only be used if we are
          * doing a bonus round.
          */
         final Set<IConstant<?>> visited = bonusRound ?
                 new LinkedHashSet<IConstant<?>>() : null;
-        
+
         for (int i = 0; i < n; i++) {
 
             long sizeBefore = solutions.size();
@@ -437,8 +437,8 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
                 runningSubquery = queryEngine.eval(subquery, nextRoundInput
                         .toArray(new IBindingSet[nextRoundInput.size()]));
 
-                long subqueryChunksOut = 0L; // #of chunks read from
-                                             // subquery
+                long subqueryChunksOut = 0L; // #of chunks read from subquery
+                long subquerySolutionsOut = 0L; // #of solutions read from subquery
 
                 try {
 
@@ -456,7 +456,8 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
 
                         final IBindingSet[] chunk = subquerySolutionItr
                                 .next();
-
+                        subqueryChunksOut++;
+                        if (Thread.interrupted()) throw new InterruptedException();
                         for (IBindingSet bs : chunk) {
 
                             /**
@@ -465,7 +466,7 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
                              *      OutOfMemoryError instead of Timeout for
                              *      SPARQL Property Paths </a>
                              */
-                            if (subqueryChunksOut++ % 10 == 0
+                            if (subquerySolutionsOut++ % 10 == 0
                                     && Thread.interrupted()) {
                                 throw new InterruptedException();
                             }
@@ -492,7 +493,7 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
                                 }
 
                             }
-                            
+
                             /*
                              * If the edgeVar is bound coming in then we need
                              * to check whether it matches the value for
@@ -500,16 +501,16 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
                              */
                             if (edgeVar != null && bs.get(edgeVar) != null) {
 
-                                final IConstant<?> edge = middleTerm.isConstant() ? 
-                                        (IConstant<?>) middleTerm : 
+                                final IConstant<?> edge = middleTerm.isConstant() ?
+                                        (IConstant<?>) middleTerm :
                                             bs.get((IVariable<?>) middleTerm);
-                                        
+
                                 if (!bs.get(edgeVar).equals(edge)) {
                                     continue;
                                 }
 
                             }
-                            
+
                             /*
                              * Do not project any new nodes from the bonus round,
                              * only edges that connect visited nodes.
@@ -534,7 +535,7 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
                             if (i+1 == n) {
                                 continue;
                             }
-                            
+
                             /*
                              * Copy the binding set as input for next round;
                              * this is necessary, because the storeAndEmit
@@ -622,27 +623,26 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
                 }
 
             } catch (Throwable t) {
+                Throwable cause = (runningSubquery != null
+                        && runningSubquery.getCause() != null) ? runningSubquery.getCause() : t;
 
-                if (runningSubquery == null
-                        || runningSubquery.getCause() != null) {
-                    /*
-                     * If things fail before we start the subquery, or if a
-                     * subquery fails (due to abnormal termination), then
-                     * propagate the error to the parent and rethrow the
-                     * first cause error out of the subquery.
-                     * 
-                     * Note: IHaltable#getCause() considers exceptions
-                     * triggered by an interrupt to be normal termination.
-                     * Such exceptions are NOT propagated here and WILL NOT
-                     * cause the parent query to terminate.
-                     */
+//                if (runningSubquery == null
+//                        || runningSubquery.getCause() != null) {
+//                    /*
+//                     * If things fail before we start the subquery, or if a
+//                     * subquery fails (due to abnormal termination), then
+//                     * propagate the error to the parent and rethrow the
+//                     * first cause error out of the subquery.
+//                     *
+//                     * Note: IHaltable#getCause() considers exceptions
+//                     * triggered by an interrupt to be normal termination.
+//                     * Such exceptions are NOT propagated here and WILL NOT
+//                     * cause the parent query to terminate.
+//                     */
                     throw new RuntimeException(
                             ArbitraryLengthPathTask.this.context
-                                    .getRunningQuery().halt(
-                                            runningSubquery == null ? t
-                                                    : runningSubquery
-                                                            .getCause()));
-                }
+                                    .getRunningQuery().halt(cause));
+//                }
 
             } finally {
 
@@ -663,8 +663,8 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
 
             }
 
-        } // fixed point for loop         
-     
+        } // fixed point for loop
+
         /*
          * Handle the case where there is a constant on the output side of
          * the subquery. Make sure the solution's transitive output variable
@@ -702,7 +702,7 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
         if (lowerBound == 0
                 && (gearing.inVar != null && gearing.outVar != null)) {
 
-            final Map<SolutionKey, IBindingSet> zlps = 
+            final Map<SolutionKey, IBindingSet> zlps =
                     new LinkedHashMap<SolutionKey, IBindingSet>();
 
             for (IBindingSet bs : solutions.values()) {
@@ -757,100 +757,100 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
 
         }
 
-    }      
+    }
 
     /**
      * Is it possible to bind the out of the gearing to the seed?
-     * This may be because it is an unbound variable, or it may be that it is already the seed 
-     * (either as a const or as a var) 
+     * This may be because it is an unbound variable, or it may be that it is already the seed
+     * (either as a const or as a var)
      */
     @SuppressWarnings("unchecked")
-    private boolean canBind(final Gearing gearing, 
+    private boolean canBind(final Gearing gearing,
             final IBindingSet childSolutionIn, final IConstant<?> seed) {
-        if (gearing.outVar == null) 
+        if (gearing.outVar == null)
             return seed.equals(gearing.outConst);
-        if (!childSolutionIn.isBound(gearing.outVar)) 
+        if (!childSolutionIn.isBound(gearing.outVar))
             return true;
         return seed.equals(childSolutionIn.get(gearing.outVar));
     }
-    
+
     /**
      * Choose forward or reverse gear based on the scematics of the operator
      * and the incoming binding sets.
      */
     private Gearing chooseGearing(final IBindingSet[] bsets) {
-        
+
         /*
          * By just taking the first binding set we are assuming that all
          * the binding sets in this chunk are best served by the same
          * gearing.
-         * 
+         *
          * TODO Challenge this assumption?
          */
-        final IBindingSet bs = (bsets != null && bsets.length > 0) ? 
+        final IBindingSet bs = (bsets != null && bsets.length > 0) ?
                 bsets[0] : EmptyBindingSet.INSTANCE;
-        
+
         if (forwardGearing.inConst != null) {
-            
+
             if (log.isDebugEnabled())
                 log.debug("forward gear");
-            
+
             // <X> (p/p)* ?o or <X> (p/p)* <Y>
             return forwardGearing;
-            
+
         } else if (forwardGearing.outConst != null) {
-            
+
             if (log.isDebugEnabled())
                 log.debug("reverse gear");
-            
+
             // ?s (p/p)* <Y>
             return reverseGearing;
-            
+
         } else {
-            
+
             if (bs.isBound(forwardGearing.inVar)) {
-                
+
                 if (log.isDebugEnabled())
                     log.debug("forward gear");
-                
+
                 // ?s (p/p)* ?o and ?s is bound in incoming binding set
                 return forwardGearing;
-                
+
             } else if (bs.isBound(forwardGearing.outVar)) {
-                
+
                 if (log.isDebugEnabled())
                     log.debug("reverse gear");
-                
+
                 // ?s (p/p)* ?o and ?o is bound in incoming binding set
                 return reverseGearing;
-                
+
             } else {
-                
+
                 if (log.isDebugEnabled())
                     log.debug("forward gear");
-                
+
                 // ?s (p/p)* ?o and neither ?s nor ?o are bound in incoming binding set
                 return forwardGearing;
-                
+
             }
-            
+
         }
-        
+
     }
-        
-   
+
+
     /**
      * Need to filter the duplicates per the spec:
-     * 
+     *
      * "Such connectivity matching does not introduce duplicates (it does
      * not incorporate any count of the number of ways the connection can be
      * made) even if the repeated path itself would otherwise result in
      * duplicates.
-     * 
+     *
      * The graph matched may include cycles. Connectivity matching is
      * defined so that matching cycles does not lead to undefined or
      * infinite results."
-     * 
+     *
      * We handle this by keeping the solutions in a Map with a solution key
      * that keeps duplicates from getting in.
      */
@@ -873,27 +873,27 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
                         new IConstant<?>[] { bs.get(gearing.tVarOut) });
             }
         } else {
-            final IConstant<?> edge = middleTerm.isConstant() ? 
+            final IConstant<?> edge = middleTerm.isConstant() ?
                     (IConstant<?>) middleTerm : bs.get((IVariable<?>) middleTerm);
-                    
+
             if (gearing.inVar != null && gearing.outVar != null) {
                 return new SolutionKey(new IConstant<?>[] {
                         bs.get(gearing.inVar), bs.get(gearing.outVar),
                         bs.get(gearing.tVarOut), edge });
             } else if (gearing.inVar != null) {
                 return new SolutionKey(new IConstant<?>[] {
-                        bs.get(gearing.inVar), 
+                        bs.get(gearing.inVar),
                         bs.get(gearing.tVarOut), edge });
             } else if (gearing.outVar != null) {
                 return new SolutionKey(new IConstant<?>[] {
-                        bs.get(gearing.outVar), 
+                        bs.get(gearing.outVar),
                         bs.get(gearing.tVarOut), edge });
             } else {
                 return new SolutionKey(
-                        new IConstant<?>[] { 
+                        new IConstant<?>[] {
                         bs.get(gearing.tVarOut), edge });
             }
-            
+
         }
 
     }
@@ -904,7 +904,7 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
      * the solution is emitted (it will still run through a distinct filter,
      * taking care that we don't emit solutions that have been emited before
      * already).
-     * 
+     *
      * @param bs
      *            the binding set representing the solution
      * @param gearing
@@ -929,7 +929,7 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
      * done, the solution is emitted (it will still run through a distinct
      * filter, taking care that we don't emit solutions that have been
      * emitted before already).
-     * 
+     *
      * @param solution
      *            the key for the solution
      * @param bs
@@ -951,7 +951,7 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
     /**
      * Flushes a solution to the output buffer, in case it is not a
      * duplicate.
-     * 
+     *
      * @param bs
      * @param gearing
      */
@@ -971,19 +971,19 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
             }
 
         }
-        
+
         /*
          * Set the edgeVar if necessary.
          */
         if (edgeVar != null) {
-            
-            final IConstant<?> edge = middleTerm.isConstant() ? 
+
+            final IConstant<?> edge = middleTerm.isConstant() ?
                     (IConstant<?>) middleTerm : bs.get((IVariable<?>) middleTerm);
-            
+
             if (edge != null) {
                 bset.set(edgeVar, edge);
             }
-            
+
         }
 
         /**
@@ -1078,11 +1078,11 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
 
     /**
      * Lifted directly from the {@link JVMDistinctFilter}.
-     * 
+     *
      * TODO Refactor to use {@link JVMDistinctFilter} directly iff possible
      * (e.g., a chain of the AALP operator followed by the DISTINCT
      * solutions operator)
-     * 
+     *
      */
     private final static class SolutionKey {
 
@@ -1121,11 +1121,11 @@ public class ArbitraryLengthPathTask implements Callable<Void> {
             }
             return true;
         }
-        
+
         public String toString() {
             return Arrays.toString(vals);
         }
 
     }
-    
+
 }
