@@ -98,7 +98,7 @@ import cutthecrap.utils.striterators.ICloseableIterator;
  * <em>direct</em> {@link ByteBuffer}s. This can be very efficient in
  * combination with hash joins at the expense of increasing the latency to the
  * first result when compared with pipelined evaluation.
- *
+ * 
  * @author <a href="mailto:thompsonbry@users.sourceforge.net">Bryan Thompson</a>
  */
 abstract public class AbstractRunningQuery implements IRunningQuery {
@@ -145,7 +145,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 
     /** The unique identifier for this query. */
     final private UUID queryId;
-
+    
     /**
      * Stats associated with static analysis
      */
@@ -194,7 +194,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * source iteration is always closed when the query is cancelled.
      */
     final private IChunkMessage<IBindingSet> realSource;
-
+    
     /** The query. */
     final private PipelineOp query;
 
@@ -219,7 +219,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
     final protected IHaltable<Void> getFuture() {
 
         return future;
-
+        
     }
 
     /**
@@ -252,13 +252,13 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 //    public long getSolutionCount() {
 //
 //        if (queryBuffer != null) {
-//
+//            
 //            ((BlockingBufferWithStats<?>) queryBuffer).getElementsAddedCount();
-//
+//            
 //        }
 //
 //        return 0L;
-//
+//        
 //    }
 //
 //    /**
@@ -267,15 +267,15 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 //    public long getSolutionChunkCount() {
 //
 //        if (queryBuffer != null) {
-//
+//            
 //            ((BlockingBufferWithStats<?>) queryBuffer).getChunksAddedCount();
-//
+//            
 //        }
 //
 //        return 0L;
-//
+//        
 //    }
-
+    
     /**
      * A lock guarding various state changes. This guards changes to the
      * internal state of the {@link #runState} object. It is also used to
@@ -283,7 +283,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * {@link #cancel(boolean)} and make atomic decision concerning whether to
      * attach a new {@link IChunkMessage} to an operator task which is already
      * running or to start a new task for that message.
-     *
+     * 
      * @see RunState
      */
     protected final ReentrantLock lock = new ReentrantLock();
@@ -293,6 +293,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * query controller.
      */
     final private RunState runState;
+    
     /**
      * Flag used to prevent retriggering of query tear down activities in
      * {@link #cancel(boolean)}.
@@ -304,7 +305,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 //     * down. This collection is used to provide the guarantee that an operator
 //     * is torn down exactly once, regardless of the #of invocations of the
 //     * operator or the #of errors which might occur during query processing.
-//     *
+//     * 
 //     * @see PipelineOp#tearDown()
 //     */
 //    private final Map<Integer/* bopId */, AtomicBoolean> tornDown = new LinkedHashMap<Integer, AtomicBoolean>();
@@ -312,7 +313,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
     /**
      * Set the query deadline. The query will be cancelled when the deadline is
      * passed. If the deadline is passed, the query is immediately cancelled.
-     *
+     * 
      * @param deadline
      *            The deadline.
      * @throws IllegalArgumentException
@@ -332,11 +333,11 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
             /*
              * Attempt to set the deadline.
              */
-
+            
             runState.setDeadline(deadline);
-
+            
             queryEngine.addQueryToDeadlineQueue(this);
-
+            
         } catch (QueryTimeoutException e) {
 
             /*
@@ -344,17 +345,17 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
              */
 
             halt(e);
-
+            
         }
-
+        
     }
 
     /**
      * If the query deadline has expired, then halt the query.
-     *
+     * 
      * @throws QueryTimeoutException
      *             if the query deadline has expired.
-     *
+     * 
      * @see <a href="https://sourceforge.net/apps/trac/bigdata/ticket/772">
      *      Query timeout only checked at operator start/stop. </a>
      */
@@ -364,16 +365,16 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 
             // already terminated.
             return;
-
+            
         }
 
         try {
-
+        
 //            if (log.isTraceEnabled())
 //                log.trace("Checking " + deadline);
 
             runState.checkDeadline();
-
+            
         } catch (QueryTimeoutException ex) {
 
             halt(ex);
@@ -384,40 +385,40 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
              */
 
         }
-
+        
     }
 
     @Override
     final public long getDeadline() {
 
         return runState.getDeadline();
-
+        
     }
 
     @Override
     final public long getStartTime() {
-
+        
         return startTime.get();
-
+        
     }
 
     @Override
     final public long getDoneTime() {
-
+        
         return doneTime.get();
-
+        
     }
 
     @Override
     final public long getElapsed() {
-
+        
         long mark = doneTime.get();
-
+        
         if (mark == 0L)
             mark = System.currentTimeMillis();
-
+        
         return mark - startTime.get();
-
+        
     }
 
     /**
@@ -425,9 +426,9 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * <code>null</code> if this is not the query controller.
      */
     final protected IBlockingBuffer<IBindingSet[]> getQueryBuffer() {
-
+        
         return queryBuffer;
-
+        
     }
 
     @Override
@@ -477,13 +478,13 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
     /**
      * Return the {@link BOpStats} instance associated with the given
      * {@link BOp} identifier.
-     *
+     * 
      * @param bopId
      *            The {@link BOp} identifier.
-     *
+     * 
      * @return The associated {@link BOpStats} object -or- <code>null</code> if
      *         there is no entry for that {@link BOp} identifier.
-     *
+     * 
      * @throws IllegalArgumentException
      *             if the argument is <code>null</code>.
      */
@@ -497,9 +498,9 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
                     + BOpUtility.toString(query));
 
         return statsMap.get(bopId);
-
+        
     }
-
+    
     @Override
     final public Map<Integer, BOp> getBOpIndex() {
 
@@ -509,12 +510,12 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 
     /**
      * Return the {@link BOp} having the specified id.
-     *
+     * 
      * @param bopId
      *            The {@link BOp} identifier.
-     *
+     * 
      * @return The {@link BOp}.
-     *
+     * 
      * @throws IllegalArgumentException
      *             if there is no {@link BOp} with that identifier declared in
      *             this query.
@@ -531,7 +532,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
         }
 
         return bop;
-
+        
     }
 
     /**
@@ -559,7 +560,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      *            the original message used to kick off the query on the query
      *            controller MUST be provided so we can ensure that the source
      *            iteration is always closed when the query is cancelled.
-     *
+     *            
      * @throws IllegalArgumentException
      *             if any argument is <code>null</code>.
      * @throws IllegalArgumentException
@@ -598,7 +599,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
         this.query = query;
 
         this.realSource = realSource;
-
+        
         this.bopIndex = BOpUtility.getIndex(query);
 
         /*
@@ -651,28 +652,28 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
     /**
      * Return the buffer that will be used to absorb solutions. The solutions
      * will be drained from the buffer using its iterator.
-     *
+     * 
      * @param query
      *            The root of the query plan.
      * @param queryStats
      *            Used to track statistics on the solutions to the query (#of
      *            chunks, #of units).
-     *
+     *            
      * @return The buffer.
      */
     final protected IBlockingBuffer<IBindingSet[]> newQueryBuffer(
             final PipelineOp query, final BOpStats queryStats) {
 
         return new BlockingBufferWithStats<IBindingSet[]>(query, queryStats);
-
+        
     }
-
+    
     /**
      * Pre-populate a map with {@link BOpStats} objects for the query. Only the
      * child operands are visited. Operators in subqueries are not visited since
      * they will be assigned {@link BOpStats} objects when they are run as a
      * subquery.
-     *
+     * 
      * @see BOp.Annotations#CONTROLLER
      */
     private void populateStatsMap(final BOp op) {
@@ -684,13 +685,13 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 
         final int bopId = bop.getId();
 
-		final BOpStats stats = bop.newStats();
-		statsMap.put(bopId, stats);
-//		log.warn("bopId=" + bopId + ", stats=" + stats);
+        final BOpStats stats = bop.newStats();
+        statsMap.put(bopId, stats);
+//      log.warn("bopId=" + bopId + ", stats=" + stats);
 
         /*
          * Visit children.
-         *
+         * 
          * Note: The CONTROLLER concept has its subquery expressed through an
          * annotation, not through its arguments. We always want to visit the
          * child arguments of a pipeline operator. We just do not want to visit
@@ -706,20 +707,20 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
             populateStatsMap(t);
 
         }
-
+            
     }
 
     /**
      * Message provides notice that the query has started execution and will
      * consume some specific number of binding set chunks.
-     *
+     * 
      * @param msg
      *            The initial message presented to the query. The message is
      *            used to update the query {@link RunState}. However, the
      *            message will not be consumed until it is presented to
      *            {@link #acceptChunk(IChunkMessage)} by the {@link QueryEngine}
      *            .
-     *
+     * 
      * @throws UnsupportedOperationException
      *             If this node is not the query coordinator.
      */
@@ -757,10 +758,10 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
     /**
      * Message provides notice that the operator has started execution and will
      * consume some specific number of binding set chunks.
-     *
+     * 
      * @param msg
      *            The {@link IStartOpMessage}.
-     *
+     * 
      * @throws UnsupportedOperationException
      *             If this node is not the query coordinator.
      */
@@ -781,11 +782,10 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 
             if(log.isTraceEnabled())
                 log.trace(msg.toString());
-
-			if (future.isDone()) { // BLZG-1418
-				throw new RuntimeException("Query has been cancelled");
-			}
-
+            
+            if (future.isDone()) // BLZG-1418
+                throw new RuntimeException("Query is done");
+            
             runState.startOp(msg);
 
         } catch (TimeoutException ex) {
@@ -796,7 +796,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
              * Note: The exception is not rethrown when the query halts for a
              * deadline.
              */
-
+            
         } finally {
 
             lock.unlock();
@@ -810,10 +810,10 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * termination conditions for the query are checked. (For scale-out, the
      * node controlling the query needs to be involved for each operator
      * start/stop in order to make the termination decision atomic).
-     *
+     * 
      * @param msg
      *            The {@link IHaltOpMessage}
-     *
+     * 
      * @throws UnsupportedOperationException
      *             If this node is not the query coordinator.
      */
@@ -843,7 +843,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 
                 /**
                  * Combine stats, but do not combine a stats object with itself.
-                 *
+                 * 
                  * @see <a
                  *      href="https://sourceforge.net/apps/trac/bigdata/ticket/464">
                  *      Query Statistics do not update correctly on cluster</a>
@@ -859,7 +859,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
                 }
                 /**
                  * Post-increment now that we know who one the data race.
-                 *
+                 * 
                  * @see <a
                  *      href="https://sourceforge.net/apps/trac/bigdata/ticket/793">
                  *      Explain reports incorrect value for opCount</a>
@@ -898,11 +898,11 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
             default:
                 throw new AssertionError();
             }
-
+            
         } catch (Throwable t) {
 
             halt(t);
-
+            
             /*
              * Note: The exception is not rethrown when the query halts for a
              * deadline.
@@ -924,7 +924,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * last pass evaluation. This method works around that by sending an empty
      * {@link IChunkMessage} if the operator would not otherwise have been
      * triggered.
-     *
+     * 
      * @param msg
      *
      * @see <a href="http://trac.blazegraph.com/ticket/868"> COUNT(DISTINCT) returns no rows rather than ZERO. </a>
@@ -957,13 +957,13 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
             }
 
         }
-
+        
         if (runState.getTotalLastPassRemainingCount() == 0) {
 
             return;
-
+            
         }
-
+        
         // Consider the operators which require last pass evaluation.
         for (Integer bopId : runState.getLastPassRequested()) {
 
@@ -993,7 +993,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * AbstractRunningQuery and the queue of accepted messages. If the queue
      * blocks, this thread will be yield the lock and another thread may make
      * progress.
-     *
+     * 
      * @param msg
      * @param doneOn
      *            The collection of shards or services on which the operator
@@ -1047,68 +1047,68 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
         acceptChunk(emptyMessage);
 
     }
-
+    
     /**
      * Return <code>true</code> iff the preconditions have been satisfied for
      * the "at-once" invocation of the specified operator (no predecessors are
      * running or could be triggered and the operator has not been evaluated).
-     *
+     * 
      * @param bopId
      *            Some operator identifier.
-     *
+     * 
      * @return <code>true</code> iff the "at-once" evaluation of the operator
      *         may proceed.
      */
     protected boolean isAtOnceReady(final int bopId) {
-
+        
         lock.lock();
-
+        
         try {
 
 //          if (isDone()) {
 //              // The query has already halted.
 //              throw new InterruptedException();
 //          }
-
+            
             return runState.isAtOnceReady(bopId);
-
+            
         } finally {
-
+            
             lock.unlock();
-
+            
         }
-
+        
     }
 
     /**
      * Return the {@link RunStateEnum} for an operator.
-     *
+     * 
      * @param bopId
      *            The operator.
-     *
+     *            
      * @return It's {@link RunStateEnum}.
      */
     protected RunStateEnum getRunState(final int bopId) {
-
+        
         lock.lock();
-
+        
         try {
 
 //          if (isDone()) {
 //              // The query has already halted.
 //              throw new InterruptedException();
 //          }
-
+            
             return runState.getOperatorRunState(bopId);
-
+            
         } finally {
-
+            
             lock.unlock();
-
+            
         }
-
+        
     }
-
+    
     /**
      * Attempt to return the {@link RunStateEnum} for an operator
      * (non-blocking).
@@ -1119,10 +1119,10 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * barge in if the lock is available and return the {@link RunStateEnum} of
      * the operator. If the lock is not available, it will return
      * <code>null</code>.
-     *
+     * 
      * @param bopId
      *            The operator.
-     *
+     * 
      * @return It's {@link RunStateEnum} and <code>null</code> if the lock could
      *         not be acquired.
      */
@@ -1146,13 +1146,13 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
             }
 
         } else {
-
+        
             return null;
-
+            
         }
 
     }
-
+    
     /**
      * Release native memory associated with this operator, if any (NOP, but
      * overridden in scale-out to release NIO buffers used to move solutions
@@ -1168,18 +1168,18 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * retained until the termination of the query, at which point the query's
      * {@link IMemoryManager} context will be release, and all child contexts
      * will be released automatically along with it.
-     *
+     * 
      * @param bopId
-     *
+     * 
      * @see #releaseNativeMemoryForQuery()
      */
     protected void releaseNativeMemoryForOperator(final int bopId) {
         // NOP
     }
-
+    
     /**
      * Release native memory associated with this query, if any.
-     *
+     * 
      * FIXME This could cause direct buffers to be released back to the pool
      * before the operator tasks have terminated. That is NOT safe as the
      * buffers could then be reissued to other threads while existing threads
@@ -1208,7 +1208,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * query asynchronously after the query has been cancelled, deferring the
      * release of the native buffers back to the direct buffer pool until all
      * tasks for the query are known to be done.
-     *
+     * 
      * FIXME We need to have distinct events for the query evaluation life cycle
      * and the query results life cycle. Really, this means that temporary
      * solution sets are scoped to the parent query. This is a matter of the
@@ -1219,17 +1219,17 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * session concepts.]
      */
     protected void releaseNativeMemoryForQuery() {
-
+        
         assert lock.isHeldByCurrentThread();
-
+        
         // clear reference, returning old value.
         final IMemoryManager memoryManager = this.memoryManager.getAndSet(null);
 
         if (memoryManager != null) {
-
+            
             // release resources.
             memoryManager.clear();
-
+            
         }
 
     }
@@ -1238,12 +1238,12 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * Make a chunk of binding sets available for consumption by the query.
      * <p>
      * Note: this is invoked by {@link QueryEngine#acceptChunk(IChunkMessage)}
-     *
+     * 
      * @param msg
      *            The chunk.
-     *
+     * 
      * @return <code>true</code> if the message was accepted.
-     *
+     * 
      * @todo Reconcile {@link #acceptChunk(IChunkMessage)} and
      *       {@link #consumeChunk()}. Why {@link #consumeChunk()} is also used
      *       by the {@link QueryEngine}.
@@ -1255,7 +1255,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * already on its input queue.
      */
     abstract protected void consumeChunk();
-
+    
     @Override
     final public ICloseableIterator<IBindingSet[]> iterator() {
 
@@ -1355,20 +1355,20 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
                 releaseAcceptedMessages();
                 /*
                  * Cancel any running operators for this query on this node.
-                 *
+                 * 
                  * Note: This can interrupt *this* thread. E.g., when SLICE
                  * calls halt().
                  */
                 cancelled |= cancelRunningOperators(mayInterruptIfRunning);
                 /*
                  * Test and clear the interrupt status.
-                 *
+                 * 
                  * Note: This prevents a thread from interrupting itself during
                  * the query tear down. If we do not do this then the interrupt
                  * tends to get "noticed" by the next lock acquisition, which
                  * happens to be the one where we release the native memory
                  * buffers.
-                 *
+                 * 
                  * TODO It may be possible for interrupts to be thrown inside of
                  * these methods after we have tested and cleared the interrupt
                  * status of the Thread. That would result in a wrapped
@@ -1432,7 +1432,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 
     /**
      * Cancel any running operators for this query on this node (internal API).
-     *
+     * 
      * @return <code>true</code> if any operators were cancelled.
      */
     abstract protected boolean cancelRunningOperators(
@@ -1470,9 +1470,9 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
     //
     // if (f.cancel(mayInterruptIfRunning))
     // cancelled = true;
-    //
+    //        
     // }
-    //
+    //    
     // }
     //
     // return cancelled;
@@ -1484,12 +1484,12 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * <p>
      * Note: The default implementation verifies that the caller is holding the
      * {@link #lock} but is otherwise a NOP. This is overridden for scale-out.
-     *
+     * 
      * @param cause
      *            When non-<code>null</code>, the cause.
-     *
+     * 
      * @return <code>true</code> iff something was cancelled.
-     *
+     * 
      * @throws IllegalMonitorStateException
      *             unless the {@link #lock} is held by the current thread.
      * @throws UnsupportedOperationException
@@ -1572,9 +1572,9 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
     protected long getRunningCount(final int bopId) {
 
         // Note: lock is NOT required.
-
+        
         return runState.getRunningCount(bopId);
-
+        
     }
 
     /**
@@ -1584,20 +1584,20 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * sharded join has read based on the solutions being mapped across that
      * join. The units are shards if the operator is sharded and nodes if the
      * operator is hash partitioned.
-     *
+     * 
      * @param bopId
      *            The operator identifier.
-     *
+     * 
      * @return The #of shards or nodes on which the operator has started.
      */
     protected int getStartedOnCount(final int bopId) {
-
+        
         // Note: lock is NOT required.
-
+        
         return runState.getStartedOnCount(bopId);
-
+        
     }
-
+    
     /**
      * {@inheritDoc}
      * <p>
@@ -1667,24 +1667,24 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
         }
         return memoryManager;
     }
-
+    
     private final AtomicReference<IMemoryManager> memoryManager = new AtomicReference<IMemoryManager>();
-
+    
     /**
      * Allocate a memory manager for the query.
-     *
+     * 
      * @see QueryHints#ANALYTIC_MAX_MEMORY_PER_QUERY
-     *
+     * 
      * @see QueryHints#DEFAULT_ANALYTIC_MAX_MEMORY_PER_QUERY
-     *
+     * 
      * @see <a href="http://jira.blazegraph.com/browse/BLZG-42" > Per query
      *      memory limit for analytic query mode. </a>
      */
     private IMemoryManager newMemoryManager() {
-
+        
         // The native memory pool that will be used by this query.
         final DirectBufferPool pool = DirectBufferPool.INSTANCE;
-
+        
         // Figure out how much memory may be allocated by this query.
         long maxMemoryBytesPerQuery = QueryHints.DEFAULT_ANALYTIC_MAX_MEMORY_PER_QUERY;
         if (maxMemoryBytesPerQuery < 0) {
@@ -1706,7 +1706,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
              * Allocations do not block if we run out of native memory for this
              * query. Instead a memory allocation exception will be thrown and
              * the query will break.
-             *
+             * 
              * The #of sectors is computed by dividing through by the size of
              * the backing native ByteBuffers and then rounding up.
              */
@@ -1727,18 +1727,18 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 
     @Override
     final public IQueryAttributes getAttributes() {
-
+        
         return queryAttributes;
-
+        
     }
-
+    
     private final IQueryAttributes queryAttributes = new DefaultQueryAttributes();
 
     /**
      * Report a snapshot of the known (declared) child {@link IRunningQuery}s
      * for this {@link IRunningQuery} and (recursively) for any children of this
      * {@link IRunningQuery}.
-     *
+     * 
      * @return An array providing a snapshot of the known child
      *         {@link IRunningQuery}s and never <code>null</code>.
      */
@@ -1779,22 +1779,22 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * Attach a child query.
      * <p>
      * Queries as submitted do not know about parent/child relationships
-     *
+     * 
      * @param childQuery
      *            The child query.
-     *
+     * 
      * @return <code>true</code> if the child query was not already declared.
      */
     final public boolean addChild(final IRunningQuery childQuery) {
-
+    
         synchronized(children) {
-
+        
             final UUID childId = childQuery.getQueryId();
-
+            
             if (children.containsKey(childId)) {
 
                 return false;
-
+                
             }
 
             if (future.isDone()) { // BLZG-1418
@@ -1803,11 +1803,11 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
             }
 
             children.put(childId, childQuery);
-
+            
             return true;
-
+            
         }
-
+        
     }
 
     final private LinkedHashMap<UUID, IRunningQuery> children = new LinkedHashMap<UUID, IRunningQuery>();
@@ -1826,7 +1826,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
             lock.unlock();
         }
     }
-
+    
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder(getClass().getName());
@@ -1856,29 +1856,29 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 
     // abstract protected IChunkHandler getChunkHandler();
 
-	/**
-	 * Return <code>true</code> iff the root cause of the {@link Throwable} was
-	 * an interrupt. This checks for any of the different kinds of exceptions
-	 * which can be thrown when an interrupt is encountered.
-	 *
-	 * @param t
-	 *            The throwable.
-	 * @return <code>true</code> iff the root cause was an interrupt.
-	 *
-	 * TODO This could be optimized by checking once at each level for any of
-	 *         the indicated exceptions.
-	 */
-	static public boolean isRootCauseInterrupt(final Throwable t) {
-		if (InnerCause.isInnerCause(t, InterruptedException.class)) {
-			return true;
-		} else if (InnerCause.isInnerCause(t, ClosedByInterruptException.class)) {
-			return true;
-		} else if (InnerCause.isInnerCause(t, InterruptedException.class)) {
-			return true;
-		}
-		return false;
-	}
-
+    /**
+     * Return <code>true</code> iff the root cause of the {@link Throwable} was
+     * an interrupt. This checks for any of the different kinds of exceptions
+     * which can be thrown when an interrupt is encountered.
+     * 
+     * @param t
+     *            The throwable.
+     * @return <code>true</code> iff the root cause was an interrupt.  
+     * 
+     * TODO This could be optimized by checking once at each level for any of
+     *         the indicated exceptions.
+     */
+    static public boolean isRootCauseInterrupt(final Throwable t) {
+        if (InnerCause.isInnerCause(t, InterruptedException.class)) {
+            return true;
+        } else if (InnerCause.isInnerCause(t, ClosedByInterruptException.class)) {
+            return true;
+        } else if (InnerCause.isInnerCause(t, InterruptedException.class)) {
+            return true;
+        }
+        return false;
+    }
+    
    @Override
    public void setStaticAnalysisStats(StaticAnalysisStats saStats) {
       this.saStats = saStats;
