@@ -293,7 +293,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
      * query controller.
      */
     final private RunState runState;
-
+    
     /**
      * Flag used to prevent retriggering of query tear down activities in
      * {@link #cancel(boolean)}.
@@ -685,9 +685,9 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 
         final int bopId = bop.getId();
 
-		final BOpStats stats = bop.newStats();
-		statsMap.put(bopId, stats);
-//		log.warn("bopId=" + bopId + ", stats=" + stats);
+        final BOpStats stats = bop.newStats();
+        statsMap.put(bopId, stats);
+//      log.warn("bopId=" + bopId + ", stats=" + stats);
 
         /*
          * Visit children.
@@ -782,6 +782,9 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 
             if(log.isTraceEnabled())
                 log.trace(msg.toString());
+            
+            if (future.isDone()) // BLZG-1418
+                throw new RuntimeException("Query is done");
             
             runState.startOp(msg);
 
@@ -954,7 +957,7 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
             }
 
         }
-    	
+        
         if (runState.getTotalLastPassRemainingCount() == 0) {
 
             return;
@@ -1794,6 +1797,11 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
                 
             }
 
+            if (future.isDone()) { // BLZG-1418
+                childQuery.cancel(true/* mayInterruptIfRunning */);
+                throw new RuntimeException("Query is done");
+            }
+
             children.put(childId, childQuery);
             
             return true;
@@ -1848,29 +1856,29 @@ abstract public class AbstractRunningQuery implements IRunningQuery {
 
     // abstract protected IChunkHandler getChunkHandler();
 
-	/**
-	 * Return <code>true</code> iff the root cause of the {@link Throwable} was
-	 * an interrupt. This checks for any of the different kinds of exceptions
-	 * which can be thrown when an interrupt is encountered.
-	 * 
-	 * @param t
-	 *            The throwable.
-	 * @return <code>true</code> iff the root cause was an interrupt.  
-	 * 
-	 * TODO This could be optimized by checking once at each level for any of
-	 *         the indicated exceptions.
-	 */
-	static public boolean isRootCauseInterrupt(final Throwable t) {
-		if (InnerCause.isInnerCause(t, InterruptedException.class)) {
-			return true;
-		} else if (InnerCause.isInnerCause(t, ClosedByInterruptException.class)) {
-			return true;
-		} else if (InnerCause.isInnerCause(t, InterruptedException.class)) {
-			return true;
-		}
-		return false;
-	}
-	
+    /**
+     * Return <code>true</code> iff the root cause of the {@link Throwable} was
+     * an interrupt. This checks for any of the different kinds of exceptions
+     * which can be thrown when an interrupt is encountered.
+     * 
+     * @param t
+     *            The throwable.
+     * @return <code>true</code> iff the root cause was an interrupt.  
+     * 
+     * TODO This could be optimized by checking once at each level for any of
+     *         the indicated exceptions.
+     */
+    static public boolean isRootCauseInterrupt(final Throwable t) {
+        if (InnerCause.isInnerCause(t, InterruptedException.class)) {
+            return true;
+        } else if (InnerCause.isInnerCause(t, ClosedByInterruptException.class)) {
+            return true;
+        } else if (InnerCause.isInnerCause(t, InterruptedException.class)) {
+            return true;
+        }
+        return false;
+    }
+    
    @Override
    public void setStaticAnalysisStats(StaticAnalysisStats saStats) {
       this.saStats = saStats;
