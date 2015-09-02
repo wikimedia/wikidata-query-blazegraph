@@ -1,21 +1,17 @@
 /**
 Copyright (C) SYSTAP, LLC 2013.  All rights reserved.
-
 Contact:
      SYSTAP, LLC
      2501 Calvert ST NW #106
      Washington, DC 20008
      licenses@systap.com
-
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; version 2 of the License.
-
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -23,6 +19,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 package com.bigdata.rdf.sail.webapp;
 
 import java.io.IOException;
+
+import org.apache.http.Header;
+import org.apache.http.message.BasicHeader;
+import org.eclipse.jetty.http.MimeTypes;
+import org.openrdf.rio.RDFFormat;
 
 import junit.framework.Test;
 
@@ -57,6 +58,36 @@ public class TestRelease123Protocol extends AbstractProtocolTest{
 	public void testAskGetXML() throws IOException {
 		assertTrue(serviceRequest("query",ASK).contains("</sparql>"));
 		assertEquals(BigdataRDFServlet.MIME_SPARQL_RESULTS_XML, getResponseContentType());
+	}
+	
+	public void testEchoBackHeader() throws IOException {
+		resetDefaultOptions();
+		setMethodisPost(BigdataRDFServlet.MIME_SPARQL_UPDATE, update);
+		String response = serviceRequest();
+		assertFalse(response.contains("INSERT"));
+		Header echoBack = new BasicHeader(BigdataRDFContext.HTTP_HEADER_ECHO_BACK_QUERY, "true");
+		Header[] headers = {
+				echoBack
+				};
+		setHeaders(headers);
+		setMethodisPost(BigdataRDFServlet.MIME_SPARQL_UPDATE, update);
+		response = serviceRequest();
+		assertTrue(response.contains("INSERT"));
+		
+	}
+
+	public void testRepeatedHeaders() throws IOException {
+		resetDefaultOptions();
+		this.setAccept("application/trig, text/turtle");
+		String result1 = serviceRequest("query", CONSTRUCT);
+		resetDefaultOptions();
+		Header[] headers = {
+				new BasicHeader("Accept", "application/trig"), 
+				new BasicHeader("Accept", "text/turtle")
+				};
+		this.setHeaders(headers);
+		String result2 = serviceRequest("query", CONSTRUCT);
+		assertEquals(result1, result2);
 	}
 
 	public void testSelectPostEncodeXML() throws IOException {
