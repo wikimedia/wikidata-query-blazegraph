@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -67,7 +68,7 @@ import com.bigdata.rwstore.PSOutputStream;
  * 
  * @author Martyn Cutcher
  */
-public class AllocationContext implements IMemoryManager {//, IStore {
+public class AllocationContext implements IAllocationContext, IMemoryManager {//, IStore {
 	
 	private static final transient Logger log = Logger
 			.getLogger(AllocationContext.class);
@@ -100,10 +101,26 @@ public class AllocationContext implements IMemoryManager {//, IStore {
 	private final AtomicLong m_userBytes = new AtomicLong();
 	private final AtomicLong m_slotBytes = new AtomicLong();
 
-	public AllocationContext(final MemoryManager root) {
+	/**
+	 * Note: Must be either atomic or volatile since accessed without a lock!
+	 */
+	private final AtomicBoolean m_active = new AtomicBoolean(true);
+	
+	final boolean m_isolated;
+
+	@Override
+	final public void checkActive() {
+		if (!m_active.get()) {
+			throw new IllegalStateException();
+		}
+	}
+	
+	public AllocationContext(final MemoryManager root, boolean isolated) {
 		
 		if(root == null)
 			throw new IllegalArgumentException();
+		
+		m_isolated = isolated;
 		
 		m_root = root;
 
@@ -124,14 +141,23 @@ public class AllocationContext implements IMemoryManager {//, IStore {
 		
 		lock = m_root.m_allocationLock;
 		
+		m_isolated = parent.m_isolated;
+		
+	}
+	
+	@Override
+	public boolean isIsolated() {
+		return m_isolated;
 	}
 
+	@Override
 	public long allocate(final ByteBuffer data) {
 
 		return allocate(data, true/* blocks */);
 
 	}
 	
+	@Override
 	public long allocate(final ByteBuffer data, final boolean blocks) {
 
 		if (data == null)
@@ -147,6 +173,7 @@ public class AllocationContext implements IMemoryManager {//, IStore {
 
 	}
 
+	@Override
 	public long allocate(final int nbytes) {
 
 		return allocate(nbytes, true/*blocks*/);
@@ -156,6 +183,7 @@ public class AllocationContext implements IMemoryManager {//, IStore {
 	/*
 	 * Core impl.
 	 */
+	@Override
 	public long allocate(final int nbytes, final boolean blocks) {
 
 		lock.lock();
@@ -182,6 +210,7 @@ public class AllocationContext implements IMemoryManager {//, IStore {
 
 	}
 
+	@Override
 	public void clear() {
 
 		lock.lock();
@@ -208,6 +237,7 @@ public class AllocationContext implements IMemoryManager {//, IStore {
 
 	}
 
+	@Override
 	public void free(final long addr) {
 
 		final int rwaddr = MemoryManager.getAllocationAddress(addr);
@@ -233,48 +263,56 @@ public class AllocationContext implements IMemoryManager {//, IStore {
 
 	}
 
+	@Override
 	public ByteBuffer[] get(final long addr) {
 
 		return m_root.get(addr);
 
 	}
 
+	@Override
 	public byte[] read(final long addr) {
 
 		return MemoryManager.read(this, addr);
 
 	}
 
+	@Override
 	public IMemoryManager createAllocationContext() {
 
 		return new AllocationContext(this);
 
 	}
 
+	@Override
 	public int allocationSize(final long addr) {
 
 		return m_root.allocationSize(addr);
 		
 	}
 
+	@Override
 	public long getAllocationCount() {
 		
 		return m_allocCount.get();
 		
 	}
 	
+	@Override
 	public long getSlotBytes() {
 	
 		return m_slotBytes.get();
 		
 	}
 
+	@Override
 	public long getUserBytes() {
 
 		return m_userBytes.get();
 		
 	}
 
+	@Override
 	public CounterSet getCounters() {
 		
 		final CounterSet root = new CounterSet();
@@ -415,10 +453,10 @@ public class AllocationContext implements IMemoryManager {//, IStore {
 		throw new UnsupportedOperationException();
 	}
 
-	@Override
-	public void registerContext(final IAllocationContext context) {
-		throw new UnsupportedOperationException();
-	}
+//	@Override
+//	public void registerContext(final IAllocationContext context) {
+//		throw new UnsupportedOperationException();
+//	}
 
 //	@Override
 //	public void setRetention(final long parseLong) {
@@ -454,6 +492,18 @@ public class AllocationContext implements IMemoryManager {//, IStore {
     public void delete(long addr, IAllocationContext context) {
         free(addr,context);
     }
+
+	@Override
+	public IAllocationContext newAllocationContext(final boolean isolated) {
+		return this;
+	}
+
+	@Override
+	public void release() {
+		checkActive();
+		
+		m_active.set(false);
+	}
 
 //	private SectorAllocation m_head = null;
 //	

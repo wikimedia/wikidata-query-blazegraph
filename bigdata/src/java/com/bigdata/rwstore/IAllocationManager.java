@@ -28,6 +28,14 @@ import com.bigdata.rawstore.IAllocationContext;
 public interface IAllocationManager {
 
     /**
+	 * Creates a context to be used to isolate updates to within the context until it
+	 * is released to the parent environment.
+	 * 
+	 * @return a new IAlocationContext
+	 */
+	IAllocationContext newAllocationContext(final boolean isolated);
+    
+    /**
      * Indicates that the allocation context will no longer be used and that the
      * allocations made within the context should be discarded. The allocations
      * associated with the context are discarded, as are any deletes made within
@@ -37,7 +45,7 @@ public interface IAllocationManager {
      * @param context
      *            The application object which serves as the allocation context.
      */
-    public void abortContext(IAllocationContext context);
+    void abortContext(IAllocationContext context);
 
     /**
      * Indicates that the allocation context will no longer be used, but that
@@ -50,16 +58,6 @@ public interface IAllocationManager {
      * @param context
      *            The application object which serves as the allocation context.
      */
-    public void detachContext(IAllocationContext context);
-
-    /**
-     * Notify the {@link IStore} that an object will serve as an allocation
-     * context and ensures that session protection will be active while the
-     * context is registered. Contexts are implicitly registered on first use.
-     * 
-     * @param context
-     *            The application object which serves as the allocation context.
-     */
-    public void registerContext(IAllocationContext context);
+    void detachContext(IAllocationContext context);
 
 }

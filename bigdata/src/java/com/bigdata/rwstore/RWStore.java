@@ -77,10 +77,12 @@ import com.bigdata.ha.msg.HAWriteMessage;
 import com.bigdata.ha.msg.IHALogRequest;
 import com.bigdata.ha.msg.IHARebuildRequest;
 import com.bigdata.ha.msg.IHAWriteMessage;
+import com.bigdata.util.ChecksumUtility;
 import com.bigdata.io.DirectBufferPool;
 import com.bigdata.io.FileChannelUtility;
 import com.bigdata.io.IBufferAccess;
 import com.bigdata.io.IReopenChannel;
+import com.bigdata.util.MergeStreamWithSnapshotData;
 import com.bigdata.io.compression.CompressorRegistry;
 import com.bigdata.io.compression.IRecordCompressor;
 import com.bigdata.io.writecache.BufferedWrite;
@@ -109,9 +111,6 @@ import com.bigdata.rawstore.IPSOutputStream;
 import com.bigdata.rawstore.IRawStore;
 import com.bigdata.service.AbstractTransactionService;
 import com.bigdata.util.ChecksumError;
-import com.bigdata.util.ChecksumUtility;
-import com.bigdata.util.MergeStreamWithSnapshotData;
-import com.bigdata.util.StackInfoReport;
 
 /**
  * Storage class
@@ -2273,6 +2272,8 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
         }
         m_allocationWriteLock.lock();
         try {
+        	checkContext(context);
+        	
             if (m_lockAddresses != null && m_lockAddresses.containsKey((int)laddr))
                 throw new IllegalStateException("address locked: " + laddr);
             
@@ -2307,18 +2308,18 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
                      * then isSessionProtected may return false, so check the
                      * context first.
                      */
-                    if (context != null) {
+                    if (context != null && context.isIsolated()) {
                         if (alloc.canImmediatelyFree(addr, sze, context)) {
                             immediateFree(addr, sze, true);
                         } else {
-                             establishContextAllocation(context).deferFree(encodeAddr(addr, sze));
+                             getContextAllocation(context).deferFree(encodeAddr(addr, sze));
                         }
                     } else if (this.isSessionProtected()) {
                         immediateFree(addr, sze, false);
                     } else {
                         immediateFree(addr, sze);
                     }
-                } else if (context != null && alloc.canImmediatelyFree(addr, sze, context)){
+                } else if (context != null && (context.isIsolated()) && alloc.canImmediatelyFree(addr, sze, context)){
                     immediateFree(addr, sze);
                 } else {
                     // if a free request is made within a context not managed by
@@ -2333,8 +2334,8 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
                             log.debug("Should defer " + addr + " real: " + physicalAddress(addr));
                     if (alwaysDefer || !alloc.canImmediatelyFree(addr, sze, context)) {
                     	// If the context is != null, then the deferral must be against that context!
-                    	if (context != null) {
-                     		establishContextAllocation(context).deferFree(encodeAddr(addr, sze));
+                    	if (context != null && context.isIsolated()) {
+                     		getContextAllocation(context).deferFree(encodeAddr(addr, sze));
                     	} else {
                     		deferFree(addr, sze);
                     	}
@@ -2349,6 +2350,12 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
         
     }
     
+    private void checkContext(final IAllocationContext context) {
+		if (context != null) {
+			context.checkActive();
+		}
+	}
+
     private long encodeAddr(long alloc, final int nbytes) {
         alloc <<= 32;
         alloc += nbytes;
@@ -2637,11 +2644,13 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
         
         m_allocationWriteLock.lock();
         try {
+        	checkContext(context);
+        	
             try {
                 final FixedAllocator allocator;
                 final int i = fixedAllocatorIndex(size);
-                if (context != null) {
-                    allocator = establishContextAllocation(context).getFreeFixed(i);
+                if (context != null && context.isIsolated()) {
+                    allocator = getContextAllocation(context).getFreeFixed(i);
                     
                     if (allocator.checkBlock0()) {
                     	if (log.isInfoEnabled())
@@ -2760,6 +2769,8 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
 
         m_allocationWriteLock.lock();
         try {
+        	checkContext(context);
+        	
             final long begin = System.nanoTime();
 
             if (size > (m_maxFixedAlloc - 4)) {
@@ -2904,6 +2915,16 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
 //      }
 //  }
 
+//    /*
+//     * Slug
+//     */
+//    private int fibslug(int n) {
+//    	if (n < 2) 
+//    		return 1;
+//    	else
+//    		return fibslug(n-1) + fibslug(n-2);
+//    }
+    
     /**
      * The semantics of reset are to revert unisolated writes to committed
      * state.
@@ -2926,6 +2947,8 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
         }
         m_allocationWriteLock.lock();
         try {
+        	// DEBUG
+        	// fibslug(40); // slug to improve odds of interruption of reset (if possible)
             assertOpen();
 //          assertNoRebuild();
 
@@ -4939,21 +4962,6 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
     }
 
     /**
-     * When a new context is started it must be registered to ensure it is
-     * protected.
-     * 
-     * @param context
-     */
-    public void registerContext(IAllocationContext context) {
-        m_allocationWriteLock.lock();
-        try {
-            establishContextAllocation(context);
-        } finally {
-            m_allocationWriteLock.unlock();
-        }
-    }
-    
-    /**
      * {@inheritDoc}
      * <p>
      * The {@link ContextAllocation} object manages a freeList of associated
@@ -4969,10 +4977,12 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
         assertOpen();
         m_allocationWriteLock.lock();
         try {
+        	context.release();
+        	
+        	if (context.isIsolated()) {
             final ContextAllocation alloc = m_contexts.remove(context);
             
             if (alloc != null) {
-                m_contextRemovals++;
                 alloc.release();            
             } else {
                 throw new IllegalStateException("Multiple call to detachContext");
@@ -4981,6 +4991,7 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
             if (m_contexts.isEmpty() && this.m_activeTxCount == 0) {
                 releaseSessions();
             }
+        	}
         } finally {
             m_allocationWriteLock.unlock();
         }
@@ -4999,12 +5010,15 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
         assertOpen();
         m_allocationWriteLock.lock();
         try {
+        	context.release();
+        	
+        	if (context.isIsolated()) {
             final ContextAllocation alloc = m_contexts.remove(context);
             
             if (alloc != null) {
-                m_contextRemovals++;
                 alloc.abort();          
             }
+        	}
             
         } finally {
             m_allocationWriteLock.unlock();
@@ -5179,9 +5193,7 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
     private final Map<IAllocationContext, ContextAllocation> m_contexts = 
         new ConcurrentHashMap<IAllocationContext, ContextAllocation>();
     
-    private int m_contextRequests = 0;
-    private int m_contextRemovals = 0;
-    private ContextAllocation establishContextAllocation(
+    private ContextAllocation getContextAllocation(
             final IAllocationContext context) {
 
         /*
@@ -5194,25 +5206,29 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
         
         if (ret == null) {
             
-            ret = new ContextAllocation(this, m_freeFixed.length, null, context);
-
-            if (m_contexts.put(context, ret) != null) {
-                
-                throw new AssertionError();
-                
-            }
-        
-            if (log.isTraceEnabled())
-                log.trace("Establish ContextAllocation: " + ret 
-                        + ", total: " + m_contexts.size() 
-                        + ", requests: " + ++m_contextRequests 
-                        + ", removals: " + m_contextRemovals 
-                        + ", allocators: " + m_allocs.size() );
+        	// This is no longer a valid state
       
+        	throw new IllegalStateException("No associated ContextAllocation");
             
-            if (log.isInfoEnabled())
-                log.info("Context: ncontexts=" + m_contexts.size()
-                        + ", context=" + context);
+//            ret = new ContextAllocation(this, m_freeFixed.length, null, context);
+//
+//            if (m_contexts.put(context, ret) != null) {
+//                
+//                throw new AssertionError();
+//                
+//            }
+//        
+//            if (log.isTraceEnabled())
+//                log.trace("Establish ContextAllocation: " + ret 
+//                        + ", total: " + m_contexts.size() 
+//                        + ", requests: " + ++m_contextRequests 
+//                        + ", removals: " + m_contextRemovals 
+//                        + ", allocators: " + m_allocs.size() );
+//      
+//            
+//            if (log.isInfoEnabled())
+//                log.info("Context: ncontexts=" + m_contexts.size()
+//                        + ", context=" + context);
             
         }
 
@@ -6453,6 +6469,8 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
     }  
 
     public IPSOutputStream getOutputStream(final IAllocationContext context) {
+    	checkContext(context);
+    	
         return PSOutputStream.getNew(this, m_maxFixedAlloc, context);
     }
 
@@ -7464,6 +7482,53 @@ public class RWStore implements IStore, IBufferedWriter, IBackingReader {
 	public void snapshotAllocators(final ISnapshotData tm) {
 		for(FixedAllocator alloc : m_allocs) {
 			alloc.snapshot(tm);
+		}
+	}
+	
+	class AllocationContext implements IAllocationContext {
+		
+		boolean m_active = true;
+		final boolean m_isolated;
+		
+		public AllocationContext(boolean isolated) {
+			m_isolated = isolated;
+		}
+
+		final public void checkActive() {
+			if (!m_active) {
+				throw new IllegalStateException();
+			}
+		}
+		
+		final public void release() {
+			checkActive();
+			
+			m_active = false;
+		}
+
+		@Override
+		public boolean isIsolated() {
+			return m_isolated;
+		}
+	}
+	
+	public IAllocationContext newAllocationContext(final boolean isolated) {
+		m_allocationWriteLock.lock();
+		try {
+			final IAllocationContext ret = new AllocationContext(isolated);
+			if (isolated) {
+				final ContextAllocation ca = new ContextAllocation(this,
+						m_freeFixed.length, null, ret);
+	
+				if (m_contexts.put(ret, ca) != null) {
+	
+					throw new AssertionError();
+	
+				}
+			}
+			return ret;
+		} finally {
+			m_allocationWriteLock.unlock();
 		}
 	}
 

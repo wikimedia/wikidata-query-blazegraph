@@ -427,11 +427,6 @@ public class MemStrategy implements IBufferStrategy, IRWStrategy, IAllocationMan
 	}
 
 	@Override
-	public void registerContext(IAllocationContext context) {
-		m_mmgr.registerContext(context);
-	}
-
-	@Override
 	public int checkDeferredFrees(final AbstractJournal abstractJournal) {
 		return m_mmgr.checkDeferredFrees(abstractJournal);
 	}
@@ -495,6 +490,11 @@ public class MemStrategy implements IBufferStrategy, IRWStrategy, IAllocationMan
 	@Override
 	public boolean isDirty() {
 		return m_dirty;
+	}
+
+	@Override
+	public IAllocationContext newAllocationContext(final boolean isolated) {
+		return m_mmgr.newAllocationContext(isolated);
 	}
 
 //	@Override

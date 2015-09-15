@@ -819,10 +819,15 @@ public class RWStrategy extends AbstractRawStore implements IBufferStrategy,
 		return m_store.newTx();
 	}
 
+	//@Martyn:  Please review
+	/*
+	 * 
 	@Override
 	public void registerContext(final IAllocationContext context) {
 		m_store.registerContext(context);
+		
 	}
+	*/
 
 	@Override
 	public void registerExternalCache(
@@ -916,6 +921,12 @@ public class RWStrategy extends AbstractRawStore implements IBufferStrategy,
 	@Override
 	public StoreState getStoreState() {
 		return m_store.getStoreState();
+	}
+
+	//@Martyn:  Please review
+	@Override
+	public IAllocationContext newAllocationContext(boolean isolated) {
+		return m_store.newAllocationContext(isolated);
 	}
 	
 //	@Override
