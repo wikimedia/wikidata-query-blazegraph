@@ -73,6 +73,9 @@ import com.bigdata.rdf.sparql.ast.VarNode;
 import com.bigdata.rdf.sparql.ast.eval.AST2BOpContext;
 import com.bigdata.rdf.sparql.ast.eval.AST2BOpUtility;
 import com.bigdata.rdf.sparql.ast.eval.IEvaluationContext;
+import com.bigdata.rdf.sparql.ast.explainhints.BottomUpSemanticsExplainHint;
+import com.bigdata.rdf.sparql.ast.explainhints.IExplainHint;
+import com.bigdata.rdf.sparql.ast.explainhints.UnsatisfiableMinusExplainHint;
 
 import cutthecrap.utils.striterators.Filter;
 import cutthecrap.utils.striterators.IStriterator;
@@ -937,6 +940,15 @@ public class ASTBottomUpOptimizer implements IASTOptimizer {
                     nvar = Var.var(context.createVar("-unbound-var-"
                             + ovar.getName() + "-")));
 
+            /*
+             * This indicates a potential problem with the query, so we
+             * set an explain hint for it.
+             */
+            final IExplainHint explainHint =
+               new BottomUpSemanticsExplainHint(ovar, nvar, (BOp)node);
+            if (parent!=null) {
+               ((ASTBase) parent).addExplainHint(explainHint);
+            } // nowhere to append
         }
 
         if (parent != null)
@@ -1010,6 +1022,13 @@ public class ASTBottomUpOptimizer implements IASTOptimizer {
 //                        + incomingBound + ", produced=" + maybeProduced);
                 
                 if (intersection.isEmpty()) {
+                   
+                    // this indicates an ill-designed query, as it is most
+                    // likely not what the author envisioned, therefore we
+                    // attach an explaing hint
+                    final IExplainHint explainHint =
+                       new UnsatisfiableMinusExplainHint(childGroup);
+                    group.addExplainHint(explainHint);
 
                     // Remove the MINUS operator. It can not have any effect.
                     
