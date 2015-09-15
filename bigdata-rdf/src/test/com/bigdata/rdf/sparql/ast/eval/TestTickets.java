@@ -1103,6 +1103,20 @@ public class TestTickets extends AbstractDataDrivenSPARQLTestCase {
        ).runTest();
     }
     
+        
+	/**
+	 * 
+	 * @see <a href="https://jira.blazegraph.com/browse/BLZG-1300"> SUM(DISTINCT
+	 *      $a) does not take DISTINCT into account</a>
+	 */
+	public void test_ticket_blzg_1300() throws Exception {
+		new TestHelper("ticket_blzg_1300",// testURI,
+				"ticket_blzg_1300.rq",// queryFileURL
+				"empty.trig",// dataFileURL
+				"ticket_blzg_1300.srx"// resultFileURL
+		).runTest();
+	}  
+    
     public void test_ticket_blzg_1475a() throws Exception {
        new TestHelper(
           "ticket_blzg_1475a",// testURI,
