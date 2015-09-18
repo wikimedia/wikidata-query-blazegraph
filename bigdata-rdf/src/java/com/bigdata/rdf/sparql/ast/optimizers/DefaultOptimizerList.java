@@ -408,6 +408,11 @@ public class DefaultOptimizerList extends ASTOptimizerList {
 //        add(new ASTUnknownTermOptimizer());
         
         /**
+         * Convert an ALP service call into an ArbitraryLengthPathNode
+         */
+        add(new ASTALPServiceOptimizer());
+
+        /**
          * Rewrites aspects of queries where bottom-up evaluation would produce
          * different results.
          * 
@@ -430,11 +435,6 @@ public class DefaultOptimizerList extends ASTOptimizerList {
          * JoinGroupNode, eliminating unnecessary hash joins.
          */
         add(new ASTFlattenJoinGroupsOptimizer());
-
-        /**
-         * Convert an ALP service call into an ArbitraryLengthPathNode
-         */
-        add(new ASTALPServiceOptimizer());
 
         /**
          * Rewrites the WHERE clause of each query by lifting out any
