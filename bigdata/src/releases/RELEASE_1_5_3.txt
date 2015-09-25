@@ -1,0 +1,69 @@
+Blazegraph™ is our ultra high-performance graph database supporting Blueprints and RDF/SPARQL APIs. It supports up to 50 Billion edges on a single machine and has a High Availability and Scale-out architecture. It is in production use for Fortune 500 customers such as EMC, Autodesk, and many others.
+
+This is a major release of Blazegraph™.  The official release is made into the Sourceforge Git repository.  Releases after 1.4.0 will no longer be made into SVN. 
+
+Blazegraph Features (http://www.blazegraph.com/blazegraph#FeatureMatrix)
+
+1.5.3 is minor release of Blazegraph with some important bug fixes, which are listed below.  If you're upgrading from prior to 1.5.2, be sure to checkout the updated documentation on SPARQL and Dr. Michael Schmidt's excellent blog posts.
+
+https://wiki.blazegraph.com/wiki/index.php/SPARQL_Order_Matters 
+https://wiki.blazegraph.com/wiki/index.php/SPARQL_Bottom_Up_Semantics
+
+We have some exciting things planned for our 1.6 release coming later this year including GPU acceleration, deployment on Maven Central, and continued improvements in query optimization and performance.  Don't miss it.  Sign up to stay in touch with Blazegraph: http://eepurl.com/VLpUj
+
+Starting points:
+
+	Blazegraph Wiki:  https://wiki.blazegraph.com/
+	Blazegraph Blog:  https://blog.blazegraph.com/
+	Blazegraph JIRA:  https://jira.blazegraph.com/
+	Blazegraph Support:  http://www.blazegraph.com/support/
+	Public Code Samples:  https://github.com/SYSTAP/blazegraph-samples
+
+Download Blazegraph now:
+
+	http://www.blazegraph.com/download
+
+Checkout the latest source code:
+	
+git clone -b BIGDATA_RELEASE_1_5_3 --single-branch git://git.code.sf.net/p/bigdata/git BIGDATA_RELEASE_1_5_3
+
+Change log:
+
+Release Notes - Blazegraph (by SYSTAP) - Version BLAZEGRAPH_RELEASE_1_5_3
+
+** Bug
+    * [BLZG-1300] - SUM(DISTINCT $a) does not take DISTINCT into account
+    * [BLZG-1344] - The bigdata-bundled.jar SPARQL endpoint ignores repeated Accept headers
+    * [BLZG-1368] - Blueprints TestPathConstraints Failing After Merge with Master
+    * [BLZG-1398] - RIO CSV handler should be bundled
+    * [BLZG-1404] - Poor performance of SPARQL UPDATE
+    * [BLZG-1436] - hint:runLast ignored for ALP and possibly VALUES
+    * [BLZG-1439] - loadGraphML throws RuntimeException "Expecting Content-Type of application/xml, not text/html"
+    * [BLZG-1443] - Explore query is too complex.
+    * [BLZG-1475] - variable visibility FILTER  EXISTS inside FILTER NOT EXISTS
+    * [BLZG-1493] - NPE in nested star property paths
+    * [BLZG-1494] - Do not attach FILTER to UNION
+    * [BLZG-1495] - Property paths with trailing ? not treated properly
+
+
+** Improvement
+    * [BLZG-28] - Add Java client examples to wiki
+    * [BLZG-204] - Add section on jetty configuration to NSS wiki page
+    * [BLZG-1309] - Report detailed timing for SPARQL UPDATE
+    * [BLZG-1438] - avoid code duplication imposed by HashIndexOp and its subclasses
+    * [BLZG-1446] - Provide detailed statistics on execution performance inside of SPARQL UPDATE requests.
+
+** New Feature
+    * [BLZG-1257] - RDR History
+
+** Task
+    * [BLZG-192] - Enable group commit by default
+    * [BLZG-1376] - BlazeGraph Release 1.5.3
+    * [BLZG-1412] - Move bigdata-rdf/samples in the blazegraph-samples repository
+    * [BLZG-1413] - move bigdata/src/samples to blazegraph-samples
+    * [BLZG-1440] - Write up issues with bottom-up, left-to-right evaluation in SPARQL. Post to blog and user guide.
+    * [BLZG-1457] - Explore query in Workbench
+    * [BLZG-1461] - Add Unit Tests to Blazegraph-samples projects
+    * [BLZG-1490] - Validate 1.5.3 Fixes are all in 1.5.2 Maintenance Branch
+    * [BLZG-1492] - Release Blazegraph Samples
+    * [BLZG-1496] - 1.5.3 Benchmarks
