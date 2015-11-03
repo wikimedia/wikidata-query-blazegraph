@@ -189,9 +189,9 @@ public class LexiconConfiguration<V extends BigdataValue>
      * extension to the {@link IExtension}.
      */
     private final Map<String, IExtension<BigdataValue>> datatype2ext;
-    
+
     /**
-     * The set of inline datatypes that should be included in the text index 
+     * The set of inline datatypes that should be included in the text index
      * even though they are inline and not normally text indexed.
      */
     private final Set<URI> inlineDatatypesToTextIndex;
@@ -199,7 +199,7 @@ public class LexiconConfiguration<V extends BigdataValue>
     /**
      * The set of registered {@link IMathOpHandler}s.
      */
-    private static final ArrayList<IMathOpHandler> typeHandlers = new ArrayList<IMathOpHandler>();
+    private final ArrayList<IMathOpHandler> typeHandlers = new ArrayList<IMathOpHandler>();
 
     public final BigdataValueFactory getValueFactory() {
 
@@ -244,12 +244,12 @@ public class LexiconConfiguration<V extends BigdataValue>
         return blobsThreshold;
 
     }
-    
+
     @Override
     public boolean isInlineDatatypeToTextIndex(final URI dt) {
-        
+
         return dt != null && inlineDatatypesToTextIndex.contains(dt);
-        
+
     }
 
     public String toString() {
@@ -339,7 +339,7 @@ public class LexiconConfiguration<V extends BigdataValue>
         this.vocab = vocab;
         this.valueFactory = valueFactory;
         this.uriFactory = uriFactory;
-        
+
         /*
          * TODO Make this configurable.
          */
