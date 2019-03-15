@@ -246,7 +246,7 @@ abstract public class BigdataServlet extends HttpServlet implements IMimeTypes {
     * @throws ExecutionException
     * @throws InterruptedException
     * @throws IOException
-    * @throws TimeoutException
+    * @throws TimeoutException 
     * 
     * @see <a href="http://sourceforge.net/apps/trac/bigdata/ticket/753" > HA
     *      doLocalAbort() should interrupt NSS requests and AbstractTasks </a>
@@ -287,14 +287,14 @@ abstract public class BigdataServlet extends HttpServlet implements IMimeTypes {
             context.addTask(task, ft);
             
             // Await Future.
-            // The semantics of FutureTask are such that a timeout "Waits if necessary for at most the given time".
-            // In Blazegraph, a time out of zero means unlimited.
-            if (timeoutMillis > 0) {
-                ft.get(timeoutMillis, TimeUnit.MILLISECONDS);
+            //The semantics of FutureTask are such that a timeout "Waits if necessary for at most the given time".
+            //In Blazegraph, a time out of zero means unlimited.
+            final long queryTimeout = BigdataRDFContext.getQueryTimeout(task.req, context.getConfig().queryTimeout);
+            if(queryTimeout > 0) { //If the query timeout is not unlimited, pass it to the FutureTask.
+               ft.get(queryTimeout , TimeUnit.MILLISECONDS);
             } else {
-            ft.get();
+            	ft.get();
             }
-
             /*
              * IFF successful, flush and close the response.
              * 
