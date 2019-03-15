@@ -237,8 +237,6 @@ abstract public class BigdataServlet extends HttpServlet implements IMimeTypes {
     * 
     * @param task
     *           The task.
-    * @param timeoutMillis
-    *           Optional timeout for the whole task.
     * 
     * @return The {@link Future} for that task.
     * 
@@ -256,7 +254,7 @@ abstract public class BigdataServlet extends HttpServlet implements IMimeTypes {
     *      operations should be cancelable from both REST API and workbench
     *      </a>
     */
-   protected <T> FutureTask<T> submitApiTask(final AbstractRestApiTask<T> task, long timeoutMillis)
+   protected <T> FutureTask<T> submitApiTask(final AbstractRestApiTask<T> task)
          throws DatasetNotFoundException, InterruptedException,
          ExecutionException, IOException, TimeoutException {
 
@@ -320,22 +318,6 @@ abstract public class BigdataServlet extends HttpServlet implements IMimeTypes {
 
     }
    
-    /**
-    * @see submitApiTask(AbstractRestApiTask, long)
-    * @param task
-    * @return
-    * @throws DatasetNotFoundException
-    * @throws InterruptedException
-    * @throws ExecutionException
-    * @throws IOException
-    * @throws TimeoutException
-    */
-    protected <T> FutureTask<T> submitApiTask(final AbstractRestApiTask<T> task)
-           throws DatasetNotFoundException, InterruptedException,
-           ExecutionException, IOException, TimeoutException {
-        return submitApiTask(task, 0);
-    }
-
     /**
      * Return the {@link HAStatusEnum} -or- <code>null</code> if the
      * {@link IIndexManager} is not an {@link AbstractQuorum} or is not HA
