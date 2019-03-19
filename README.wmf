@@ -1,0 +1,9 @@
+This repository is a fork of https://github.com/blazegraph/database, maintained by the Wikimedia Foundation.
+
+Below are described changes that are applied to the upstream version.
+
+- README.md: added notice about this repo being a fork (675862ffcbb5e0aa0f291efa72dfc6fea6d33993)
+
+- BigdataRDFServlet.java: patch to use slf4j instead of log4j (c68506bc00bb7a4bf5f7b9a76e1b23e761364830)
+
+- pom.xml: Archiva deployment profile (269cf1a5d34820297ada5384dc63e3337d24ab46)
