@@ -30,7 +30,7 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.blazegraph</groupId>
   <artifactId>blazegraph-parent</artifactId>
-  <version>2.1.5-wmf.2</version>
+  <version>2.1.5-wmf.2-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Blazegraph Database Platform</name>
   <description>Blazegraph™ DB is our ultra high-performance graph database supporting Blueprints and RDF/SPARQL APIs. It supports up to 50 Billion edges on a single machine and has a High Availability and Scale-out architecture. It is in production use for customers such as EMC, Syapse, Wikidata Query Service, the British Museum, and many others.  GPU acceleration and High Availability (HA) are available in the Enterprise edition.  It contains war, jar, deb, rpm, and tar.gz deployment artifacts.</description>
@@ -226,7 +226,7 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
     <fastutil.version>6.5.16</fastutil.version>
     <lgplutils.version>1.0.7-270114</lgplutils.version>
     <bigdata.ganglia.version>1.0.4</bigdata.ganglia.version>
-    <jackson.version>2.2.3</jackson.version>
+    <jackson.version>2.9.8</jackson.version>
     <blueprints.version>2.5.0</blueprints.version>
     <jettison.version>1.3.3</jettison.version>
     <rexster.version>2.5.0</rexster.version>
