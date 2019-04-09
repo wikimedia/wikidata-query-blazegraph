@@ -375,3 +375,6 @@ bigdata-rdf-test/test_small.out
 
 **/blazegraph.jnl
 **/bigdata.jnl
+
+*.iml
+*.versionsBackup
