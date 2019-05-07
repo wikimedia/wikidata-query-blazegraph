@@ -102,8 +102,8 @@ See https://maven.apache.org/plugins/maven-jar-plugin/examples/create-test-jar.h
             <include>com/bigdata/btree/TestAll.java</include>
             <include>com/bigdata/htree/TestAll.java</include>
             <include>com/bigdata/concurrent/TestAll.java</include>
-            <include>com/bigdata/quorum/TestAll.java</include>
-            <include>com/bigdata/ha/TestAll.java</include>
+            <!-- include>com/bigdata/quorum/TestAll.java</include -->
+            <!-- include>com/bigdata/ha/TestAll.java</include -->
             <include>com/bigdata/io/writecache/TestAll.java</include>
             <include>com/bigdata/journal/TestAll.java</include>
             <include>com/bigdata/rwstore/TestAll.java</include>
