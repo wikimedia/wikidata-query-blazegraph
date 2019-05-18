@@ -13,3 +13,5 @@ Below are described changes that are applied to the upstream version.
 - dsi-utils/pom.xml: Syncronized dependencies to parent (2299cac937d21d0373722d9264552d51af1d863f)
 
 - pom.xml: Disabled some HA tests that are flaky since HA is not used (0a38913ac187da73f71d90435d32d2a211aa2926)
+
+- QueryServlet.java: Improved explain display when query times out (0bcdac1a0f52a64d2fb2266c0531f48b7d09e484)
