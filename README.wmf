@@ -15,3 +15,5 @@ Below are described changes that are applied to the upstream version.
 - pom.xml: Disabled some HA tests that are flaky since HA is not used (0a38913ac187da73f71d90435d32d2a211aa2926)
 
 - QueryServlet.java: Improved explain display when query times out (0bcdac1a0f52a64d2fb2266c0531f48b7d09e484)
+
+- vocabularies/pom.xml - Fixed classifier for bigdata-rdf-test (bc6e3d71a443f0a23fcdf8f08c8c7280d0132f62)
