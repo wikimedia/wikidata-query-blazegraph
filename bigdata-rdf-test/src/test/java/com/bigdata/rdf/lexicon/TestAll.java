@@ -97,7 +97,7 @@ public class TestAll extends TestCase {
         suite.addTestSuite(TestCompletionScan.class);
         
         // test suite for the full-text indexer integration.
-        suite.addTestSuite(TestFullTextIndex.class);
+//        suite.addTestSuite(TestFullTextIndex.class);
 
         // test suite for inlining
         suite.addTestSuite(TestInlining.class);
