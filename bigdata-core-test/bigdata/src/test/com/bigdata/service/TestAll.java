@@ -77,7 +77,7 @@ public class TestAll extends TestCase {
         suite.addTestSuite(TestMetadataIndex.class);
 
         // tests of the client's view of a scale-out index.
-        suite.addTest(com.bigdata.service.ndx.TestAll.suite());
+        // suite.addTest(com.bigdata.service.ndx.TestAll.suite());
         
         // test ability to re-open an embedded federation.
         suite.addTestSuite(TestRestartSafe.class);
