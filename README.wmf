@@ -20,3 +20,6 @@ Below are described changes that are applied to the upstream version.
 
 - InlineUnsignedIntegerURIHandler.java - fix for https://phabricator.wikimedia.org/T223946 (cad8bc5ba7bf4995a958eed67a18704171471828)
 
+- Upgrade to Sesame 2.8.11 (b03e93016eef5a97799235c4cf8808b206b52d12)
+
+- ServiceRegistry.java: allow wildcards in service whitelist (324bc3c6f43d3b67092f324c1868dd64cf747655)
