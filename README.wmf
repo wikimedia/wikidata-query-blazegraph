@@ -23,3 +23,7 @@ Below are described changes that are applied to the upstream version.
 - Upgrade to Sesame 2.8.11 (b03e93016eef5a97799235c4cf8808b206b52d12)
 
 - ServiceRegistry.java: allow wildcards in service whitelist (324bc3c6f43d3b67092f324c1868dd64cf747655)
+
+- SPARQLJSONWriterBase.java - fix JSON output after Sesame upgrade (8c4b42b8a3c448c622775af5068942fc867af874)
+
+- AbstractConnectOptions.java - fix remote connections with URLs having parameters (cb44b28a01003aa4865b555b130dd77884543e0e)
