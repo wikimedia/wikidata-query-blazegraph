@@ -27,3 +27,5 @@ Below are described changes that are applied to the upstream version.
 - SPARQLJSONWriterBase.java - fix JSON output after Sesame upgrade (8c4b42b8a3c448c622775af5068942fc867af874)
 
 - AbstractConnectOptions.java - fix remote connections with URLs having parameters (cb44b28a01003aa4865b555b130dd77884543e0e)
+
+- GeoSpatialServiceFactory.java - Support for TempTripleStore in GeoSpatialServiceFactory (55834bbc4a935bcd7cd461e3e261669a7606352f)
