@@ -36,33 +36,39 @@ import java.util.concurrent.FutureTask;
 
 import org.apache.log4j.Logger;
 import org.openrdf.model.Statement;
+import org.openrdf.model.Value;
 
 import com.bigdata.journal.Journal;
 import com.bigdata.journal.TimestampUtility;
 import com.bigdata.rdf.axioms.Axioms;
 import com.bigdata.rdf.axioms.NoAxioms;
 import com.bigdata.rdf.internal.IV;
+import com.bigdata.rdf.model.BigdataBNode;
 import com.bigdata.rdf.model.BigdataStatement;
+import com.bigdata.rdf.model.BigdataValue;
 import com.bigdata.rdf.rio.AbstractStatementBuffer.StatementBuffer2;
 import com.bigdata.rdf.rio.StatementBuffer;
 import com.bigdata.rdf.rules.BackchainAccessPath;
 import com.bigdata.rdf.spo.ISPO;
 import com.bigdata.rdf.spo.SPO;
+import com.bigdata.rdf.spo.SPOKeyOrder;
 import com.bigdata.rdf.store.AbstractTripleStore.Options;
 import com.bigdata.relation.accesspath.BlockingBuffer;
 import com.bigdata.relation.accesspath.IAccessPath;
+import com.bigdata.striterator.ChunkedArrayIterator;
+import com.bigdata.striterator.EmptyChunkedIterator;
 import com.bigdata.striterator.IChunkedOrderedIterator;
 
 import cutthecrap.utils.striterators.ICloseableIterator;
 
 /**
  * Utility class for comparing graphs for equality, bulk export, etc.
- * 
+ *
  * @author <a href="mailto:thompsonbry@users.sourceforge.net">Bryan Thompson</a>
  * @version $Id$
  */
 public class TripleStoreUtility {
-    
+
     protected static final Logger log = Logger.getLogger(TripleStoreUtility.class);
 
     /**
@@ -80,20 +86,23 @@ public class TripleStoreUtility {
      * consistent in this regard. You can do this by exporting one or both using
      * {@link #bulkExport(AbstractTripleStore)}, which will cause all
      * entailments to be materialized in the returned {@link TempTripleStore}.
-     * 
+     *
      * @param expected
      *            One graph.
-     * 
+     *
      * @param actual
      *            Another graph <strong>with a consistent policy for forward and
      *            backchained entailments</strong>.
-     * 
+     *
+     * @param bnodesCompareByIVs
+     *             Compare bnodes by their IVs.
+     *
      * @return true if all statements in the expected graph are in the actual
      *         graph and if the actual graph does not contain any statements
      *         that are not also in the expected graph.
      */
     public static boolean modelsEqual(AbstractTripleStore expected,
-            AbstractTripleStore actual) throws Exception {
+            AbstractTripleStore actual, final boolean bnodesCompareByIVs) throws Exception {
 
         //        int actualSize = 0;
         int notExpecting = 0;
@@ -101,7 +110,7 @@ public class TripleStoreUtility {
         boolean sameStatements1 = true;
         {
 
-            final ICloseableIterator<BigdataStatement> it = notFoundInTarget(actual, expected);
+            final ICloseableIterator<BigdataStatement> it = notFoundInTarget(actual, expected, bnodesCompareByIVs);
 
             try {
 
@@ -133,7 +142,7 @@ public class TripleStoreUtility {
         boolean sameStatements2 = true;
         {
 
-            final ICloseableIterator<BigdataStatement> it = notFoundInTarget(expected, actual);
+            final ICloseableIterator<BigdataStatement> it = notFoundInTarget(expected, actual, bnodesCompareByIVs);
 
             try {
 
@@ -176,19 +185,19 @@ public class TripleStoreUtility {
             //                    sameStatements2 = false;
             //
             //                    log("    Expecting: " + stmt);
-            //                    
+            //
             //                    expecting++;
             //
             //                }
-            //                
+            //
             //                expectedSize++; // counts statements actually visited.
             //
             //                }
-            //                
+            //
             //            } finally {
-            //                
+            //
             //                it.close();
-            //                
+            //
             //            }
 
             log("all the statements in expected in actual? " + sameStatements2);
@@ -196,7 +205,7 @@ public class TripleStoreUtility {
         }
 
         //        final boolean sameSize = expectedSize == actualSize;
-        //        
+        //
         //        log("size of 'expected' repository: " + expectedSize);
         //
         //        log("size of 'actual'   repository: " + actualSize);
@@ -209,35 +218,40 @@ public class TripleStoreUtility {
 
     }
 
-    public static void log(final String s) {
+    public static boolean modelsEqual(AbstractTripleStore expected,
+                                      AbstractTripleStore actual) throws Exception {
+        return modelsEqual(expected, actual, false);
+    }
 
-    	if(log.isInfoEnabled())
-    		log.info(s);
+    private static void log(final String s) {
+
+        if(log.isInfoEnabled())
+            log.info(s);
 
     }
 
     /**
      * Visits <i>expected</i> {@link BigdataStatement}s not found in <i>actual</i>.
-     * 
+     *
      * @param expected
      * @param actual
-     * 
+     *
      * @return An iterator visiting {@link BigdataStatement}s present in
      *         <i>expected</i> but not found in <i>actual</i>.
-     * 
+     *
      * @throws ExecutionException
      * @throws InterruptedException
      */
     public static ICloseableIterator<BigdataStatement> notFoundInTarget(//
             final AbstractTripleStore expected,//
-            final AbstractTripleStore actual //
+            final AbstractTripleStore actual, //
+            final boolean bnodesCompareByIVs //
     ) throws InterruptedException, ExecutionException {
 
         /*
          * The source access path is a full scan of the SPO index.
          */
-        final IAccessPath<ISPO> expectedAccessPath = expected.getAccessPath(
-                (IV) null, (IV) null, (IV) null);
+        final IAccessPath<ISPO> expectedAccessPath = expected.getAccessPath(SPOKeyOrder.SPO);
 
         /*
          * Efficiently convert SPOs to BigdataStatements (externalizes
@@ -257,7 +271,7 @@ public class TripleStoreUtility {
             /**
              * Statements not found in [actual] are written on the
              * BlockingBuffer.
-             * 
+             *
              * @return The #of statements that were not found.
              */
             @Override
@@ -267,8 +281,8 @@ public class TripleStoreUtility {
                     log.info("Given " + a.length + " statements");
 
                 // bulk filter for statements not present in [actual].
-                final IChunkedOrderedIterator<ISPO> notFoundItr = actual
-                        .bulkFilterStatements(a, a.length, false/* present */);
+                final IChunkedOrderedIterator<ISPO> notFoundItr =
+                        bulkFilterStatements(actual, a, a.length, false/* present */);
 
                 int nnotFound = 0;
 
@@ -301,7 +315,18 @@ public class TripleStoreUtility {
 
             }
 
+            @Override
+            protected BigdataValue convertValue(Value value) {
+                BigdataValue result = super.convertValue(value);
+                if (bnodesCompareByIVs && result instanceof BigdataBNode && value instanceof BigdataValue
+                        && result.getValueFactory()==((BigdataValue)value).getValueFactory()) {
+                    result.setIV(((BigdataValue)value).getIV());
+                }
+                return result;
+            }
+
         };
+
 
         /**
          * Run task. The task consumes externalized statements from [expected]
@@ -355,10 +380,10 @@ public class TripleStoreUtility {
 
         // Wrap computation as FutureTask.
         final FutureTask<Void> ft = new FutureTask<Void>(myTask);
-        
+
         // Set Future on BlockingBuffer.
         buffer.setFuture(ft);
-        
+
         // Submit computation for evaluation.
         actual.getExecutorService().submit(ft);
 
@@ -368,6 +393,31 @@ public class TripleStoreUtility {
          */
 
         return buffer.iterator();
+
+    }
+
+    public static ICloseableIterator<BigdataStatement> notFoundInTarget(
+            final AbstractTripleStore expected,
+            final AbstractTripleStore actual
+    ) throws InterruptedException, ExecutionException {
+        return notFoundInTarget(expected, actual, false);
+    }
+
+    /*
+     * These procedure copied from AbstractTripleStore to support setting proper keyOrder for the ChunkedArrayIterator
+     */
+    private static IChunkedOrderedIterator<ISPO> bulkFilterStatements(AbstractTripleStore actual,
+            final ISPO[] stmts, final int numStmts, boolean present) {
+
+        if (numStmts == 0) {
+
+            return new EmptyChunkedIterator<ISPO>(actual
+                    .getSPORelation().getPrimaryKeyOrder());
+
+        }
+
+        return actual.bulkFilterStatements(new ChunkedArrayIterator<ISPO>(numStmts,
+                stmts, SPOKeyOrder.SPO), present);
 
     }
 
@@ -381,20 +431,20 @@ public class TripleStoreUtility {
      * access path, does not store justifications, and does retain the
      * {@link Axioms} model of the source graph. This method is specifically
      * designed to export "just the triples", e.g., for purposes of comparison.
-     * 
+     *
      * @param db
      *            The source database.
-     * 
+     *
      * @return The {@link TempTripleStore}.
      */
     static public TempTripleStore bulkExport(final AbstractTripleStore db) {
-    
+
         final Properties properties = new Properties();
-        
+
         properties.setProperty(Options.ONE_ACCESS_PATH, "true");
-        
+
         properties.setProperty(Options.JUSTIFY, "false");
-        
+
         properties.setProperty(Options.AXIOMS_CLASS,
                 NoAxioms.class.getName());
 
@@ -405,8 +455,8 @@ public class TripleStoreUtility {
 
         try {
 
-			final StatementBuffer<Statement> sb = new StatementBuffer<Statement>(tmp, 100000/* capacity */,
-					10/* queueCapacity */);
+            final StatementBuffer<Statement> sb = new StatementBuffer<Statement>(tmp, 100000/* capacity */,
+                    10/* queueCapacity */);
 
             final IV NULL = null;
 
@@ -437,37 +487,37 @@ public class TripleStoreUtility {
             tmp.close();
             throw new RuntimeException(t);
         }
-    
+
         return tmp;
-    
+
     }
 
     /**
      * Compares two {@link LocalTripleStore}s
-     * 
+     *
      * @param args
      *            filename filename (namespace)
-     * 
+     *
      * @throws Exception
-     *  
+     *
      * @todo namespace for each, could be the same file, and timestamp for each.
-     * 
+     *
      * @todo handle other database modes.
      */
     public static void main(String[] args) throws Exception {
-        
+
         if (args.length < 2 || args.length > 3) {
 
             usage();
-            
+
         }
 
         final File file1 = new File(args[0]);
 
         final File file2 = new File(args[1]);
 
-        final String namespace = args.length == 3 ? args[2] : "kb";
-        
+        final String namespace = args.length > 2 ? args[2] : "kb";
+
         if (!file1.exists())
             throw new FileNotFoundException(file1.toString());
 
@@ -514,26 +564,28 @@ public class TripleStoreUtility {
 
             }
 
-            modelsEqual(ts1, ts2);
-            
+            final boolean bnodesCompareByIVs = "bnodesCompareByIVs".equals(args.length == 3 ? args[3] : args[2]);
+
+            modelsEqual(ts1, ts2, bnodesCompareByIVs);
+
         } finally {
-            
+
             if (j1 != null)
                 j1.close();
 
             if (j2 != null)
                 j2.close();
-            
+
         }
-        
+
     }
 
     private static void usage() {
-        
+
         System.err.println("usage: filename filename (namespace)");
 
         System.exit(1);
-        
+
     }
-    
+
 }
