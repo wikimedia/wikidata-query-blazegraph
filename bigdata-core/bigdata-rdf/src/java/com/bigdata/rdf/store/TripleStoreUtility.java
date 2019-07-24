@@ -27,8 +27,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 package com.bigdata.rdf.store;
 
+import static com.bigdata.journal.Options.FILE;
+import static com.bigdata.journal.Options.READ_ONLY;
+
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -496,7 +501,7 @@ public class TripleStoreUtility {
      * Compares two {@link LocalTripleStore}s
      *
      * @param args
-     *            filename filename (namespace)
+     *            filename filename [namespace]
      *
      * @throws Exception
      *
@@ -512,77 +517,50 @@ public class TripleStoreUtility {
 
         }
 
-        final File file1 = new File(args[0]);
-
-        final File file2 = new File(args[1]);
-
-        final String namespace = args.length > 2 ? args[2] : "kb";
-
-        if (!file1.exists())
-            throw new FileNotFoundException(file1.toString());
-
-        if (!file2.exists())
-            throw new FileNotFoundException(file2.toString());
-
+        final String namespace = args.length >= 3 ? args[2] : "kb";
         Journal j1 = null, j2 = null;
 
         try {
 
-            final Properties p = new Properties();
+            j1 = journalFromFile(args[0]);
+            j2 = journalFromFile(args[1]);
 
-            p.setProperty(com.bigdata.journal.Options.READ_ONLY, "true");
-
-            final AbstractTripleStore ts1;
-            {
-                Properties properties = new Properties(p);
-
-                properties.setProperty(com.bigdata.journal.Options.FILE, file1
-                        .toString());
-
-                j1 = new Journal(properties);
-
-                ts1 = (AbstractTripleStore) j1.getResourceLocator().locate(
-                        namespace,
-                        TimestampUtility.asHistoricalRead(j1
-                                .getLastCommitTime()));
-
-            }
-
-            final AbstractTripleStore ts2;
-            {
-                Properties properties = new Properties(p);
-
-                properties.setProperty(com.bigdata.journal.Options.FILE, file2
-                        .toString());
-
-                j2 = new Journal(properties);
-
-                ts2 = (AbstractTripleStore) j2.getResourceLocator().locate(
-                        namespace,
-                        TimestampUtility.asHistoricalRead(j2
-                                .getLastCommitTime()));
-
-            }
-
-            final boolean bnodesCompareByIVs = "bnodesCompareByIVs".equals(args.length == 3 ? args[3] : args[2]);
-
-            modelsEqual(ts1, ts2, bnodesCompareByIVs);
+            final AbstractTripleStore ts1 = (AbstractTripleStore) j1.getResourceLocator().locate(
+                    namespace,
+                    TimestampUtility.asHistoricalRead(j1.getLastCommitTime()));
+            final AbstractTripleStore ts2 = (AbstractTripleStore) j2.getResourceLocator().locate(
+                    namespace,
+                    TimestampUtility.asHistoricalRead(j2.getLastCommitTime()));
+            modelsEqual(ts1, ts2);
 
         } finally {
-
-            if (j1 != null)
+            if (j1 != null) {
                 j1.close();
-
-            if (j2 != null)
+            }
+            if (j2 != null) {
                 j2.close();
-
+            }
         }
 
     }
 
+    private static Journal journalFromFile(String fileName) throws IOException {
+        final Properties properties = new Properties();
+
+        if (fileName.endsWith(".properties")) {
+            try (InputStream is = new FileInputStream(new File(fileName))) {
+                properties.load(is);
+            }
+        } else {
+            properties.setProperty(FILE, fileName);
+        }
+        properties.setProperty(READ_ONLY, "true");
+        return new Journal(properties);
+    }
+
     private static void usage() {
 
-        System.err.println("usage: filename filename (namespace)");
+        System.err.println("usage: filename filename [namespace]");
 
         System.exit(1);
 
