@@ -29,3 +29,7 @@ Below are described changes that are applied to the upstream version.
 - AbstractConnectOptions.java - fix remote connections with URLs having parameters (cb44b28a01003aa4865b555b130dd77884543e0e)
 
 - GeoSpatialServiceFactory.java - Support for TempTripleStore in GeoSpatialServiceFactory (55834bbc4a935bcd7cd461e3e261669a7606352f)
+
+- RebuildJournal.java - Utility to reindex a journal (eecf3148d0211adf6c22535185fc5a58e6f5595b)
+
+- TripleStoreUtility.java - modifications to accept property files instead of journal files (47192ee7e851cccb2e8502b11b9eb615f0f5bbf2)
