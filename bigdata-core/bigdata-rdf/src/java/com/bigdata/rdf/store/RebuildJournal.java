@@ -282,7 +282,7 @@ public class RebuildJournal {
                             public Void call() {
                                 ITupleIterator<?> bitr = ((AbstractBTree)ndx).rangeIterator();
                                 long inserted = 0;
-                                int n = 5000000;
+                                int n = 5_000_000;
                                 long nextChunk = n;
                                 final long startTime = System.currentTimeMillis();
                                 long startTimeChunk = startTime;
@@ -294,7 +294,7 @@ public class RebuildJournal {
                                         long currentTime = System.currentTimeMillis();
                                         long tps = 1000L*n/(currentTime-startTimeChunk);
                                         long avgTps = 1000L*inserted/(currentTime-startTime);
-                                        log.debug(name+"\t"+inserted + "\ttps\t"+tps+"\tavg\t"+avgTps);
+                                        log.debug(name+"\t"+inserted/1_000_000 + "M\ttps\t"+tps+"\tavg\t"+avgTps);
                                         startTimeChunk = currentTime;
                                         nextChunk+=n;
                                     }
