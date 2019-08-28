@@ -1201,6 +1201,20 @@ public class AST2BOpUtility extends AST2BOpRTO {
                 left = addMaterializationSteps2(left, rightId,
                         (Set<IVariable<IV>>) (Set) vars, queryHints, ctx);
 
+                // In most cases those variables, which are bound by service calls
+                // are not being bound by other clauses, but in those cases,
+                // when the service could estimate variables, which might need further
+                // materialization if bound by some other means, it should provide a set
+                // which will not be assumed fully materialized, and thus scheduled for
+                // later recheck.
+                // This feature is added for Wikidata LabelService to resolve NME issues,
+                // when the variable bound by service for one solution is not bound by
+                // service for the other solution, but bound with other clause (for example BIND).
+                Set<IVariable<?>> uncertainVars = serviceNode.getUncertainVars();
+                if (uncertainVars != null) {
+                    vars.removeAll(uncertainVars);
+                }
+
                 // These variables have now been materialized.
                 doneSet.addAll(vars);
                 

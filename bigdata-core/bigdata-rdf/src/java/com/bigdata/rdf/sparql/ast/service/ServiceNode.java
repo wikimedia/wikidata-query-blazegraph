@@ -126,6 +126,13 @@ public class ServiceNode extends GroupMemberNodeBase<IGroupMemberNode>
          */
         String PROJECTED_VARS = "projectedVars";
         
+        /**
+         * The set of variables which might be bound by the SERVICE for some
+         * solutions, and provided by other clauses, so need to be rechecked
+         * to be properly materialized.
+         */
+        String UNCERTAIN_VARS = "uncertainVars";
+        
     }
 
     /**
@@ -430,6 +437,27 @@ public class ServiceNode extends GroupMemberNodeBase<IGroupMemberNode>
        }
     }
     
+    /**
+     * @param uncertainVars
+     * 
+     * @see Annotations#UNCERTAIN_VARS
+     */
+    public void setUncertainVars(final Set<IVariable<?>> uncertainVars) {
+        
+        setProperty(Annotations.UNCERTAIN_VARS, uncertainVars);
+        
+    }
+
+    /**
+     * @see Annotations#UNCERTAIN_VARS
+     */
+    @SuppressWarnings("unchecked")
+    public Set<IVariable<?>> getUncertainVars() {
+
+        return (Set<IVariable<?>>) getProperty(Annotations.UNCERTAIN_VARS);
+
+    }
+
     /**
      * Returns the service factory that is responsible for handling this
      * service node.
