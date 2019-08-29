@@ -43,3 +43,5 @@ Below are described changes that are applied to the upstream version.
 - AbstractJoinGroupOptimizer.java - Fix UnsupportedOperationException on property path in EXISTS (T173243) (13b06ad3d58aa6dcb9961c4a496ab24575423ef3)
 
 - Bigdata2Sesame2BindingSetIterator.java - T168741 Fix NME in query with no variables and property path (f527d35ee45464c79eb1614ab6d1ceafda0e34fe)
+
+- StaticAnalysis.java - Fix non-aggregate variable in HAVING of named subquery (T165559) (cd044c7cba7f81ade77288aeb662ab104be47c31)
