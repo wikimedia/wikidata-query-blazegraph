@@ -35,3 +35,11 @@ Below are described changes that are applied to the upstream version.
 - TripleStoreUtility.java - modifications to accept property files instead of journal files (47192ee7e851cccb2e8502b11b9eb615f0f5bbf2)
 
 - Improvements to RebuildJournal output (af1a3f6ec05498254fd24410f94870ec86c3599d)
+
+- CheckJournalKeyDuplicates utility (062e04421b4541e39fe2d80653552cdcd38e2740, 5fa8718543c0a14d70f91981a109356d57bcf957)
+
+- StaticAnalysis.java - Fix Concurrent modification on non-grouping query with aggregates (T172113) (c85f1fbd198ccdee87bd10b7f7d10b022e9b9f3b)
+
+- AbstractJoinGroupOptimizer.java - Fix UnsupportedOperationException on property path in EXISTS (T173243) (13b06ad3d58aa6dcb9961c4a496ab24575423ef3)
+
+- Bigdata2Sesame2BindingSetIterator.java - T168741 Fix NME in query with no variables and property path (f527d35ee45464c79eb1614ab6d1ceafda0e34fe)
