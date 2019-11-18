@@ -57,8 +57,13 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 import org.openrdf.model.Value;
 import org.openrdf.model.impl.URIImpl;
+import org.openrdf.query.BindingSet;
 import org.openrdf.query.Dataset;
 import org.openrdf.query.MalformedQueryException;
+import org.openrdf.query.QueryResultHandlerException;
+import org.openrdf.query.TupleQueryResultHandler;
+import org.openrdf.query.TupleQueryResultHandlerBase;
+import org.openrdf.query.TupleQueryResultHandlerException;
 import org.openrdf.query.impl.AbstractOperation;
 import org.openrdf.query.impl.AbstractQuery;
 import org.openrdf.query.impl.DatasetImpl;
@@ -252,6 +257,11 @@ public class BigdataRDFContext extends BigdataBaseContext {
      */
     static public final String HTTP_HEADER_ECHO_BACK_QUERY = "X-ECHO-BACK-QUERY";
     
+    /**
+     * HTTP header may be used to echo back the query.
+     * 
+     */
+    static public final String HTTP_HEADER_FIRST_SOLUTION_MILLIS = "X-FIRST-SOLUTION-MILLIS";
     /**
      * The name of the parameter/attribute that contains maxQueryTime (milliseconds)
      * for remote queries execution.
@@ -1677,7 +1687,7 @@ public class BigdataRDFContext extends BigdataBaseContext {
 
             final BigdataSailTupleQuery query = (BigdataSailTupleQuery) setupQuery(cxn);
 
-            final TupleQueryResultWriter w;
+            final TupleQueryResultHandler w;
 
 
             if (xhtml) {
@@ -1709,8 +1719,33 @@ public class BigdataRDFContext extends BigdataBaseContext {
                         .getWriter(os);
                 
             }
+            query.evaluate(new TupleQueryResultHandler() {
+                @Override
+                public void startQueryResult(List<String> bindingNames) throws TupleQueryResultHandlerException {
+                    resp.addHeader(HTTP_HEADER_FIRST_SOLUTION_MILLIS, String.valueOf(getElapsedExecutionMillis()));
+                    w.startQueryResult(bindingNames);
+                }
 
-            query.evaluate(w);
+                @Override
+                public void handleBoolean(boolean value) throws QueryResultHandlerException {
+                    w.handleBoolean(value);
+                }
+
+                @Override
+                public void handleLinks(List<String> linkUrls) throws QueryResultHandlerException {
+                    w.handleLinks(linkUrls);
+                }
+
+                @Override
+                public void endQueryResult() throws TupleQueryResultHandlerException {
+                    w.endQueryResult();
+                }
+
+                @Override
+                public void handleSolution(BindingSet bindingSet) throws TupleQueryResultHandlerException {
+                    w.handleSolution(bindingSet);
+                }
+            });
 
 		}
 
