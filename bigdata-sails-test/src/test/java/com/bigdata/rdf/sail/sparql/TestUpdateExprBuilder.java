@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.openrdf.model.Resource;
 import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.query.MalformedQueryException;
 import org.openrdf.query.algebra.StatementPattern.Scope;
@@ -119,7 +118,42 @@ public class TestUpdateExprBuilder extends AbstractBigdataExprBuilderTestCase {
         assertSameAST(sparql, expected, actual);
 
     }
-    
+
+
+    /**
+     * <pre>
+     * load <http://www.bigdata.com/data>; * 10000
+     * </pre>
+     */
+    public void test_multiple_update_stmt_doesnt_blowup_the_stack() throws MalformedQueryException,
+            TokenMgrError, ParseException {
+
+        int ops = 10000;
+        //LOAD ( SILENT )? IRIref_from ( INTO GRAPH IRIref_to )?
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < ops; i++) {
+            sb.append("load <http://www.bigdata.com/data>;\n");
+        }
+        final String sparql = sb.toString();
+
+        final UpdateRoot expected = new UpdateRoot();
+
+        for (int i = 0; i < ops; i++) {
+            final LoadGraph op = new LoadGraph();
+
+            expected.addChild(op);
+
+            op.setSourceGraph(new ConstantNode(makeIV(valueFactory
+                    .createURI("http://www.bigdata.com/data"))));
+        }
+
+
+        final UpdateRoot actual = parseUpdate(sparql, baseURI);
+
+        assertSameAST(sparql, expected, actual);
+
+    }
+
     /**
      * Unit test for simple LOAD operation with the SILENT keyword.
      * 

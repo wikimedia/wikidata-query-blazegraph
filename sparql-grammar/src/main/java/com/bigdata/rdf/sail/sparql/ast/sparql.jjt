@@ -432,7 +432,7 @@ TOKEN:
 ASTUpdateSequence UpdateSequence():
 {}
 {
-    UpdateContainer() [ <SEMICOLON> UpdateSequence() ] <EOF>
+    UpdateContainer() ( <SEMICOLON> UpdateContainer() )* <EOF>
     { return jjtThis; }
 }
 
@@ -597,7 +597,9 @@ void DatasetClause() :
 {}
 {
     <FROM>
-    (      (        [<NAMED> {jjtThis.setNamed(true);}]
+    (
+      (
+        [<NAMED> {jjtThis.setNamed(true);}]
         [<VIRTUAL_GRAPH> {jjtThis.setVirtual(true);}]
         IRIref()
       )

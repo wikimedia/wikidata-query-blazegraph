@@ -442,7 +442,7 @@ ASTUpdateSequence UpdateSequence():
 {/*@bgen(jjtree) UpdateSequence */
     try {
 /*@egen*/
-    UpdateContainer() [ <SEMICOLON> UpdateSequence() ] <EOF>/*@bgen(jjtree)*/
+    UpdateContainer() ( <SEMICOLON> UpdateContainer() )* <EOF>/*@bgen(jjtree)*/
     {
       jjtree.closeNodeScope(jjtn000, true);
       jjtc000 = false;
