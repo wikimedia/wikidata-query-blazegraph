@@ -212,11 +212,11 @@ abstract public class BigdataRDFServlet extends BigdataServlet {
         final boolean isQuery = queryStr != null && queryStr.length() > 0;
         try {
             // log an error for the service.
-			if (isQuery) {
-				log.error("cause={}, query={}", t, queryStr, t);
-			} else {
-				log.error("cause={}", t, queryStr, t);
-			}
+            if (isQuery) {
+                log.error("cause={}, query={}", t, queryStr, t);
+            } else {
+                log.error("cause={}", t, t);
+            }
         } finally {
             // ignore any problems here.
         }
